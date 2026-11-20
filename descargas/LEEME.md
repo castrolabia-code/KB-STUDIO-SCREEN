@@ -14,3 +14,7 @@ Versión 0.8.0: el programa de la PC tiene **ventana propia** (no usa el navegad
 Versión 0.7.1: una sola instancia, botón Cerrar, encabezado de la app corregido en teléfonos.
 Versión 0.7.0: instalador de Windows, manual, estética de estudio, perfiles, modo cantante, panel de control.
 Los ejecutables aún no tienen firma digital comercial (ver docs/07-cierre-del-proyecto.md).
+
+## Folleto comercial
+
+[KBStudioScreen-Folleto.pdf](https://github.com/castrolabia-code/KB-STUDIO-SCREEN/raw/main/descargas/KBStudioScreen-Folleto.pdf): presentación del producto (6 páginas A4). Fuente editable: `marketing/folleto.html`.
