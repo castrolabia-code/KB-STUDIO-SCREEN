@@ -1,3 +1,4 @@
-Registrado: KB Studio Screen 0.7.0 de Castro Labs
+Ventana propia WebView2: shown=True
+Runtime WebView2 instalado: 157.0.4341.46
 Motor instalado OK: UDP 47800 abierto; panel 127.0.0.1:47801 rechaza sin token (403).
 INSTALADOR OK: instalación, ejecución y desinstalación limpias.
