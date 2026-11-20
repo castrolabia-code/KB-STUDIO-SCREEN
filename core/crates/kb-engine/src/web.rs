@@ -417,7 +417,7 @@ mod http_tests {
         // Página sin token / con token.
         assert!(req(port, &format!("GET / HTTP/1.1\r\n{ok_host}\r\nConnection: close\r\n\r\n")).starts_with("HTTP/1.1 403"));
         let page = req(port, &format!("GET /?t={t} HTTP/1.1\r\n{ok_host}\r\nConnection: close\r\n\r\n"));
-        assert!(page.starts_with("HTTP/1.1 200") && page.contains("KB STUDIO SCREEN"));
+        assert!(page.starts_with("HTTP/1.1 200") && page.contains("KB Studio Screen"));
         // DNS rebinding: Host ajeno, aun con token.
         assert!(req(port, &format!("GET /api/state HTTP/1.1\r\nHost: evil.example:{port}\r\nX-KBSS-Token: {t}\r\nConnection: close\r\n\r\n")).starts_with("HTTP/1.1 403"));
         // API sin token.
