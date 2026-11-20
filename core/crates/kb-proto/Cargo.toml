@@ -1,0 +1,13 @@
+[package]
+name = "kb-proto"
+description = "Protocolo versionado KB STUDIO SCREEN: mensajes, framing con límites y validación."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+postcard = { workspace = true }
+thiserror = { workspace = true }
+kb-geometry = { path = "../kb-geometry" }

@@ -1,0 +1,10 @@
+[package]
+name = "kb-geometry"
+description = "Mapeo de coordenadas Android -> escritorio virtual Windows (letterbox, zoom local, rotación, multi-monitor) y rescate de ventanas fuera de pantalla."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }

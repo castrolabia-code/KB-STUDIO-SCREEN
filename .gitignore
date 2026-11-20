@@ -1,0 +1,10 @@
+/core/target
+*.log
+/android/.gradle
+/android/build
+/android/app/build
+local.properties
+*.jks
+*.keystore
+*.pfx
+/dist

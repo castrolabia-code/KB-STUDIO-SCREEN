@@ -1,0 +1,18 @@
+[package]
+name = "kb-pairing"
+description = "Emparejamiento seguro KB STUDIO SCREEN: PIN de un solo uso (SPAKE2 con channel binding), QR, lista de confianza, fichas de reanudación y rate limiting."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+rand = { workspace = true }
+subtle = { workspace = true }
+spake2 = { workspace = true }
+base64 = { workspace = true }
+kb-proto = { path = "../kb-proto" }
