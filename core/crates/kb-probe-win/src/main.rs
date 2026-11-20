@@ -429,7 +429,9 @@ mod win {
             Ok(_) => println!("\nInforme guardado en kbss-probe-report.json (carpeta actual)."),
             Err(e) => eprintln!("\nNo se pudo guardar el informe: {e}"),
         }
-        println!("Presioná Enter para cerrar...");
-        let _ = std::io::stdin().read_line(&mut String::new());
+        if !std::env::args().any(|a| a == "--no-pause") {
+            println!("Presioná Enter para cerrar...");
+            let _ = std::io::stdin().read_line(&mut String::new());
+        }
     }
 }

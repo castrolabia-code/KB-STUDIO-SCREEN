@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Tests
+        working-directory: core
+        run: cargo test --all-targets
+      - name: Clippy
+        working-directory: core
+        run: cargo clippy --all-targets -- -D warnings
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Tests (MSVC)
+        working-directory: core
+        run: cargo test --all-targets
+      - name: Clippy (MSVC)
+        working-directory: core
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Build release binaries
+        working-directory: core
+        run: cargo build --release --bins
+      - name: Run probe on the CI Windows runner
+        working-directory: core
+        run: |
+          ./target/release/kb-probe-win.exe --no-pause
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: |
+            core/target/release/*.exe
+            core/kbss-probe-report.json
