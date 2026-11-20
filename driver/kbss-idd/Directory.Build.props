@@ -6,6 +6,7 @@
   <PropertyGroup>
     <!-- El paquete NuGet del WDK trae stampinf.exe sólo para x64/ARM64, pero los
          targets lo buscan en la carpeta x86: se apunta explícitamente a x64. -->
+    <DrvCatToolPath>$(MSBuildThisFileDirectory)packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\c\bin\10.0.28000.0\x64\</DrvCatToolPath>
     <InfToolPath>$(MSBuildThisFileDirectory)packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\c\bin\10.0.28000.0\x64\</InfToolPath>
   </PropertyGroup>
 </Project>
