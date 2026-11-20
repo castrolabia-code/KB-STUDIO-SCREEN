@@ -33,7 +33,7 @@ Fecha: 2026-11-20 · Repositorio: `castrolabia-code/KB-STUDIO-SCREEN` · CI: Git
 | Fader de Reason 14 con arrastre continuo | **VALIDADO EN EQUIPO REAL** (2026-11-20, usuario) | Teléfono Samsung → PC del estudio: pantalla visible y faders de Reason controlados "perfecto" |
 | Latencia y FPS sobre tu Wi-Fi, 720p/1080p, 15/30/60 FPS | **PENDIENTE** | Prueba B11 |
 | Cursor del mouse dibujado en la imagen | **NO IMPLEMENTADO** | Desktop Duplication no incluye el cursor; falta componerlo |
-| UI gráfica del host (Tauri) | **NO IMPLEMENTADO** | El MVP usa consola |
+| Panel de control del host (navegador local, 127.0.0.1 con token): aprobaciones, PIN, ranuras, QR, dispositivos, modo cantante, monitores, rescate | Implementado · seguridad PROBADA-LOCAL (rechazo sin token, Host ajeno, otro Origin, cuerpo grande) · **PENDIENTE** en tu PC | [evidencia/panel-control-pc.png](evidencia/panel-control-pc.png). Decisión: se reemplazó Tauri por un panel web local servido por el motor (sin dependencias extra, liviano para 8 GB) |
 
 ## Fase 2 — Extender
 

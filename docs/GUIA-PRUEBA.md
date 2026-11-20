@@ -17,6 +17,12 @@ En GitHub → repositorio **KB-STUDIO-SCREEN** → pestaña **Actions** → la e
 
 Windows SmartScreen va a advertir porque los ejecutables todavía no están firmados: **Más información → Ejecutar de todas formas**.
 
+## Panel de control (desde la versión 0.3.0)
+
+Al abrir `kbss-engine.exe` se abre solo un **panel en tu navegador** (dirección `http://127.0.0.1:47801/...`). Desde ahí podés hacer todo lo de la consola con botones: aprobar dispositivos (PIN grande), ver las 3 ranuras, mostrar el QR, dar o quitar control, revocar, y el modo cantante (arrastrás el PDF al panel). La ventana negra tiene que seguir abierta: es el motor. Si cerrás la pestaña, el enlace sigue impreso en la consola.
+
+El panel sólo funciona en tu propia PC: no es accesible desde la red ni desde otros sitios web.
+
 ## A. Preparación (una sola vez)
 
 - [ ] **A1.** La PC y los dos Android en la **misma red Wi-Fi** (ideal 5 GHz). Si la PC va por cable al mismo router, también sirve. Evitá redes de "invitados": suelen aislar dispositivos.

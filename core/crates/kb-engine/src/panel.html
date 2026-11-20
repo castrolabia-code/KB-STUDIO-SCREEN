@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KB Studio Screen</title>
+<style>
+  :root {
+    --bg: #15171a; --panel: #1f2226; --panel2: #262a2f; --line: rgba(255,255,255,.08);
+    --text: #e7e9ec; --muted: #8a9099; --orange: #ff7a1a; --ok: #4cc38a; --bad: #ff6b6b;
+    --radius: 14px;
+    font-family: Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 20% -10%, #23272c, var(--bg)); color: var(--text); min-height: 100vh; }
+  header { display: flex; align-items: baseline; gap: 14px; padding: 22px 28px 8px; flex-wrap: wrap; }
+  h1 { font-size: 22px; letter-spacing: .12em; margin: 0; font-weight: 700; }
+  .brand { color: var(--orange); font-size: 14px; }
+  .hostinfo { margin-left: auto; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; padding: 12px 28px 28px; }
+  section { background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; backdrop-filter: blur(8px); }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .slot { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-height: 120px; }
+  .slot.empty { color: var(--muted); display: flex; align-items: center; justify-content: center; border-style: dashed; }
+  .slot .name { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .tag { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 99px; border: 1px solid; margin-right: 6px; }
+  .tag.ctl { color: var(--orange); border-color: color-mix(in srgb, var(--orange) 60%, transparent); }
+  .tag.view { color: var(--muted); border-color: var(--line); }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 8px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+  .alert { background: color-mix(in srgb, var(--orange) 14%, var(--panel)); border: 1px solid color-mix(in srgb, var(--orange) 55%, transparent); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .alert .who { font-weight: 600; font-size: 16px; }
+  .pin { font-size: 44px; letter-spacing: .25em; font-weight: 700; color: var(--orange); font-variant-numeric: tabular-nums; margin: 6px 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  button { font: inherit; font-size: 15px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--orange); color: #1a0e05; border-color: var(--orange); font-weight: 600; }
+  button.danger { color: var(--bad); }
+  button:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--panel2); border-radius: 10px; }
+  .item .grow { flex: 1; }
+  .muted { color: var(--muted); font-size: 13px; }
+  #qr { background: #fff; border-radius: 12px; padding: 10px; width: 280px; max-width: 100%; display: none; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--orange); color: var(--text); }
+  #log { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); max-height: 200px; overflow: auto; white-space: pre-wrap; }
+  .status { font-size: 13px; margin-top: 8px; min-height: 18px; }
+  @media (prefers-reduced-motion: no-preference) { button { transition: border-color .15s; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>KB STUDIO SCREEN</h1><span class="brand">by Castro Labs</span>
+  <span class="hostinfo" id="hostinfo">Conectando con el motor…</span>
+</header>
+<main>
+  <section class="wide" id="alerts-sec" hidden>
+    <h2>Requiere tu atención</h2>
+    <div id="alerts"></div>
+  </section>
+
+  <section class="wide">
+    <h2>Pantallas Android (hasta 3)</h2>
+    <div class="slots" id="slots"></div>
+  </section>
+
+  <section>
+    <h2>Emparejar un dispositivo</h2>
+    <p class="muted">En la app: <b>Escanear QR</b>. El código vale 5 minutos y un solo uso. También podés elegir la PC en la lista de la app y usar PIN.</p>
+    <div class="row"><button class="primary" id="btn-qr">Mostrar QR nuevo</button></div>
+    <div class="row"><img id="qr" alt="Código QR de emparejamiento"></div>
+    <p class="muted" id="manual"></p>
+  </section>
+
+  <section>
+    <h2>Modo cantante</h2>
+    <div class="drop" id="drop" tabindex="0" role="button">Arrastrá acá un PDF o .txt con la letra<br>(o hacé clic para elegirlo)</div>
+    <input type="file" id="file" accept=".pdf,.txt,.lrc,text/plain,application/pdf" hidden>
+    <div class="row">
+      <button id="p-prev">◀ Página</button>
+      <button id="p-next">Página ▶</button>
+      <button id="p-auto-">Avance −</button>
+      <span id="speed" class="muted">0</span>
+      <button id="p-auto+">Avance +</button>
+      <button id="p-lock">Bloquear tablet</button>
+      <button id="p-close" class="danger">Cerrar letra</button>
+    </div>
+    <div class="status" id="singer-status"></div>
+    <p class="muted">Se envía a los dispositivos en <b>solo ver</b> (si no hay, a todos). Cifrado, sólo por tu red local; se borra al cerrar.</p>
+  </section>
+
+  <section>
+    <h2>Dispositivos de confianza</h2>
+    <div class="list" id="devices"></div>
+  </section>
+
+  <section>
+    <h2>Monitores de Windows</h2>
+    <div class="list" id="monitors"></div>
+    <div class="row"><button id="rescue">Rescatar ventanas fuera de pantalla</button></div>
+  </section>
+
+  <section class="wide">
+    <h2>Actividad</h2>
+    <div id="log"></div>
+  </section>
+</main>
+<script>
+"use strict";
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+let speed = 0;
+
+async function api(path, body, raw) {
+  const opt = { method: body === undefined ? "GET" : "POST", headers: { "X-KBSS-Token": TOKEN } };
+  if (body !== undefined) {
+    if (raw) { opt.body = body; } else { opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
+  }
+  const r = await fetch(path, opt);
+  return path.endsWith(".svg") ? r.blob() : r.json();
+}
+
+// Construcción segura del DOM: el texto que viene de la red nunca se interpreta como HTML.
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "onclick") e.addEventListener("click", v); else if (k === "class") e.className = v; else e.setAttribute(k, v);
+  }
+  for (const k of kids) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+}
+function fill(id, nodes) { const c = document.getElementById(id); c.replaceChildren(...nodes); }
+
+function render(s) {
+  document.getElementById("hostinfo").textContent = `PC ${s.host} · huella ${s.fp}` + (s.ip ? ` · ${s.ip}:${s.port}` : "");
+  document.getElementById("manual").textContent = s.ip ? `Dirección manual: ${s.ip}  ·  puerto ${s.port}` : "No se detectó una red local.";
+
+  const alerts = [];
+  if (s.pin) alerts.push(el("div", { class: "alert" },
+    el("div", { class: "who" }, `«${s.pin.device}» quiere emparejarse. Ingresá este PIN en el dispositivo:`),
+    el("div", { class: "pin" }, s.pin.pin), el("div", { class: "muted" }, "Vence en 2 minutos. Un solo uso.")));
+  for (const p of s.pending) {
+    const buttons = p.kind === "approve"
+      ? [el("button", { class: "primary", onclick: () => answer(p.id, "c") }, "Control táctil"),
+         el("button", { onclick: () => answer(p.id, "v") }, "Solo ver"),
+         el("button", { class: "danger", onclick: () => answer(p.id, "n") }, "Rechazar")]
+      : [el("button", { class: "primary", onclick: () => answer(p.id, "s") }, "Permitir"),
+         el("button", { class: "danger", onclick: () => answer(p.id, "n") }, "Denegar")];
+    alerts.push(el("div", { class: "alert" },
+      el("div", { class: "who" }, p.kind === "approve" ? `¿Aprobar «${p.device}»?` : `«${p.device}» pide ${p.detail}`),
+      el("div", { class: "muted" }, p.kind === "approve" ? p.detail : ""),
+      el("div", { class: "row" }, ...buttons)));
+  }
+  document.getElementById("alerts-sec").hidden = alerts.length === 0;
+  fill("alerts", alerts);
+
+  fill("slots", s.slots.map((sl, i) => sl
+    ? el("div", { class: "slot" },
+        el("div", { class: "name" }, sl.name || `Ranura ${i + 1}`),
+        el("span", { class: "tag " + (sl.permission === "control táctil" ? "ctl" : "view") }, sl.permission || "conectando"),
+        el("div", { class: "meta" }, sl.width ? `${sl.monitor} · ${sl.width}×${sl.height} · ${sl.fps} fps` : "Iniciando video…",
+          el("br"), sl.encoder || ""))
+    : el("div", { class: "slot empty" }, `Ranura ${i + 1} libre`)));
+
+  fill("devices", s.devices.length ? s.devices.map(d => el("div", { class: "item" },
+    el("div", { class: "grow" }, el("div", {}, d.name), el("div", { class: "muted" }, d.permission)),
+    el("button", { onclick: () => device(d.key, "toggle") }, d.control ? "Pasar a solo ver" : "Dar control"),
+    el("button", { class: "danger", onclick: () => { if (confirm(`¿Revocar «${d.name}»? Deberá emparejarse de nuevo.`)) device(d.key, "revoke"); } }, "Revocar")))
+    : [el("div", { class: "muted" }, "Todavía no hay dispositivos emparejados.")]);
+
+  fill("monitors", s.monitors.map(m => el("div", { class: "item" },
+    el("div", { class: "grow" }, el("div", {}, m.name + (m.primary ? " · principal" : "") + (m.virtual ? " · virtual" : "")),
+      el("div", { class: "muted" }, `${m.w}×${m.h} en (${m.x}, ${m.y})`)))));
+
+  document.getElementById("p-lock").textContent = s.locked ? "Desbloquear tablet" : "Bloquear tablet";
+  const log = document.getElementById("log");
+  log.textContent = s.log.join("\n");
+}
+
+async function refresh() {
+  try { render(await api("/api/state")); }
+  catch { document.getElementById("hostinfo").textContent = "Sin conexión con kbss-engine. ¿Se cerró la ventana del motor?"; }
+}
+async function answer(id, a) { await api("/api/answer", { id, answer: a }); refresh(); }
+async function device(key, action) { await api("/api/device", { key, action }); refresh(); }
+async function prompter(action, value) {
+  const r = await api("/api/prompter", { action, value });
+  document.getElementById("singer-status").textContent = r.ok ? `Enviado a ${r.sent} dispositivo(s).` : (r.error || "Error");
+  refresh();
+}
+
+document.getElementById("btn-qr").onclick = async () => {
+  const b = await api("/api/qr.svg");
+  const img = document.getElementById("qr");
+  img.src = URL.createObjectURL(b); img.style.display = "block";
+};
+document.getElementById("p-prev").onclick = () => prompter("prev");
+document.getElementById("p-next").onclick = () => prompter("next");
+document.getElementById("p-auto-").onclick = () => { speed = Math.max(0, speed - 1); document.getElementById("speed").textContent = speed; prompter("auto", speed); };
+document.getElementById("p-auto+").onclick = () => { speed = Math.min(10, speed + 1); document.getElementById("speed").textContent = speed; prompter("auto", speed); };
+document.getElementById("p-lock").onclick = () => prompter("lock");
+document.getElementById("p-close").onclick = () => prompter("close");
+document.getElementById("rescue").onclick = async () => { const r = await api("/api/rescue", {}); alert(`Ventanas reubicadas: ${r.moved ?? 0}`); };
+
+async function sendFile(f) {
+  const st = document.getElementById("singer-status");
+  if (f.size > 64 * 1024 * 1024) { st.textContent = "El archivo supera 64 MB."; return; }
+  st.textContent = `Enviando «${f.name}»…`;
+  const r = await api("/api/doc?name=" + encodeURIComponent(f.name), await f.arrayBuffer(), true);
+  st.textContent = r.ok ? (r.sent ? `«${f.name}» enviado a ${r.sent} dispositivo(s).` : "No hay dispositivos conectados.") : (r.error || "Error");
+}
+const drop = document.getElementById("drop"), file = document.getElementById("file");
+drop.onclick = () => file.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") file.click(); };
+file.onchange = () => file.files[0] && sendFile(file.files[0]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); e.dataTransfer.files[0] && sendFile(e.dataTransfer.files[0]); };
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

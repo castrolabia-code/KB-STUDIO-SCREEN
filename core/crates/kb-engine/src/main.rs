@@ -13,13 +13,11 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD as B64, Engine};
 use kb_pairing::{Fingerprint, TrustStore};
 use kb_proto::Permission;
-use kb_session::host::{ApprovalRequest, Host, HostConfig, HostEvent, HostUi, TrustPersistence};
+use kb_session::host::{Host, HostConfig, TrustPersistence};
 use kb_transport::{server_endpoint, Identity};
-use std::collections::VecDeque;
 use std::io::BufRead;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use tokio::sync::oneshot;
+use std::sync::Arc;
 
 const DEFAULT_PORT: u16 = 47800;
 
@@ -99,60 +97,9 @@ impl TrustPersistence for FilePersist {
 
 // ------------------------------------------------------------ consola
 
-enum Ask {
-    Approve(ApprovalRequest, oneshot::Sender<Option<Permission>>),
-    Confirm(String, oneshot::Sender<bool>),
-}
-type Pending = VecDeque<Ask>;
-
-struct ConsoleUi {
-    pending: Mutex<Pending>,
-}
-
-impl HostUi for ConsoleUi {
-    fn show_pin(&self, device: &str, pin: &str) {
-        println!("\n  ┌──────────────────────────────────────────────┐");
-        println!("  │  «{device}» quiere emparejarse.");
-        println!("  │  PIN para ingresar en el dispositivo:  {pin}");
-        println!("  │  (vence en 2 minutos, un solo uso)");
-        println!("  └──────────────────────────────────────────────┘");
-    }
-    fn hide_pin(&self, _device: &str) {}
-    fn approve(&self, req: ApprovalRequest) -> oneshot::Receiver<Option<Permission>> {
-        let (tx, rx) = oneshot::channel();
-        println!(
-            "\n  ¿Aprobar «{}» ({:?}, por {}, huella {})?\n    [c] control táctil   [v] solo ver   [n] rechazar  → escribí la letra y Enter",
-            req.device_name, req.kind, req.method, req.fingerprint_short
-        );
-        self.pending.lock().unwrap().push_back(Ask::Approve(req, tx));
-        rx
-    }
-    fn confirm(&self, device: &str, action: &str) -> oneshot::Receiver<bool> {
-        let (tx, rx) = oneshot::channel();
-        println!("\n  «{device}» pide {action}. ¿Permitir? [s] sí  [n] no  → escribí la letra y Enter");
-        self.pending.lock().unwrap().push_back(Ask::Confirm(device.to_string(), tx));
-        rx
-    }
-    fn event(&self, ev: HostEvent) {
-        match ev {
-            HostEvent::Connected { slot, name, permission } => {
-                println!("● Ranura {}: «{name}» conectado ({})", slot + 1, perm_es(permission))
-            }
-            HostEvent::Streaming { slot, monitor, width, height, fps, encoder } => {
-                println!("  Ranura {}: transmitiendo {monitor} a {width}x{height} @ {fps} FPS — {encoder}", slot + 1)
-            }
-            HostEvent::Disconnected { slot, name } => println!("○ Ranura {}: «{name}» desconectado", slot + 1),
-            HostEvent::Rejected { name, reason } => println!("✕ «{name}» rechazado: {reason}"),
-        }
-    }
-}
-
-fn perm_es(p: Permission) -> &'static str {
-    match p {
-        Permission::Control => "control táctil",
-        Permission::ViewOnly => "solo ver",
-    }
-}
+mod ui;
+mod web;
+use ui::{perm_es, Ui};
 
 fn lan_ipv4() -> Vec<std::net::Ipv4Addr> {
     let mut v: Vec<_> = if_addrs::get_if_addrs()
@@ -277,7 +224,7 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
             std::process::exit(1);
         }
     };
-    let ui = Arc::new(ConsoleUi { pending: Mutex::new(VecDeque::new()) });
+    let ui = Arc::new(Ui::new());
     let host = Host::new(
         HostConfig { host_id, host_name: name.clone(), extend_grace: kb_session::host::EXTEND_GRACE },
         host_fp,
@@ -317,34 +264,41 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     let h = host.clone();
     rt.spawn(async move { h.serve(endpoint).await });
 
+    // Panel de control local en el navegador (sólo 127.0.0.1, con token).
+    let panel = Arc::new(web::Panel {
+        host: host.clone(),
+        ui: ui.clone(),
+        platform: platform.clone(),
+        host_name: name.clone(),
+        fp_short: host_fp.short(),
+        lan_ip: ips.first().map(|i| i.to_string()),
+        quic_port: port,
+        token: web::new_token(),
+        port: port + 1,
+        locked: std::sync::atomic::AtomicBool::new(false),
+    });
+    let url = panel.url();
+    let p2 = panel.clone();
+    std::thread::spawn(move || {
+        if let Err(e) = p2.serve() {
+            eprintln!("No se pudo abrir el panel en el puerto {}: {e}", port + 1);
+        }
+    });
+    println!("Panel de control: {url}");
+    if std::env::var("KBSS_NO_BROWSER").is_err() {
+        // Abre el navegador predeterminado (la URL sólo tiene caracteres seguros).
+        let _ = std::process::Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn();
+    }
+
     // Consola: las respuestas a aprobaciones tienen prioridad sobre los comandos.
     let mut locked = false;
     let stdin = std::io::stdin();
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
         let l = line.trim().to_lowercase();
-        let ask = ui.pending.lock().unwrap().pop_front();
-        match ask {
-            Some(Ask::Approve(req, tx)) => {
-                let d = match l.as_str() {
-                    "c" => Some(Permission::Control),
-                    "v" => Some(Permission::ViewOnly),
-                    _ => None,
-                };
-                match d {
-                    Some(p) => println!("  «{}» aprobado: {}", req.device_name, perm_es(p)),
-                    None => println!("  «{}» rechazado.", req.device_name),
-                }
-                let _ = tx.send(d);
-                continue;
-            }
-            Some(Ask::Confirm(device, tx)) => {
-                let ok = l == "s" || l == "si" || l == "sí";
-                println!("  «{device}»: {}", if ok { "permitido" } else { "denegado" });
-                let _ = tx.send(ok);
-                continue;
-            }
-            None => {}
+        if ui.has_pending() && matches!(l.as_str(), "c" | "v" | "n" | "s" | "si" | "sí" | "no") {
+            ui.answer(None, &l);
+            continue;
         }
         // Comando "d": la ruta conserva mayúsculas y espacios.
         if l.starts_with("d ") {
