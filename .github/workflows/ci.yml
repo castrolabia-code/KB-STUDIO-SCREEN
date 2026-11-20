@@ -259,6 +259,7 @@ jobs:
           script: |
             cd android && ./gradlew --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.kbssQrB64=$(cat ../qr.b64)
             cd android && ./gradlew --no-daemon -q installDebug && adb shell am start -n com.castrolabs.kbstudioscreen/.MainActivity && sleep 8 && adb exec-out screencap -p > ../home.png && echo SCREEN_BEGIN && base64 -w 4000 ../home.png && echo SCREEN_END
+            adb root && sleep 3 && adb shell setprop persist.sys.locale es-AR && adb shell stop && adb shell start && sleep 10 && adb wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != 1 ]; do sleep 1; done' && sleep 15 && adb shell am start -n com.castrolabs.kbstudioscreen/.MainActivity && sleep 8 && adb exec-out screencap -p > home_es.png && echo SCREENES_BEGIN && base64 -w 4000 home_es.png && echo SCREENES_END
       - name: Verify host received the touches
         if: always()
         run: |
