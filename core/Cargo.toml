@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/kb-geometry", "crates/kb-proto", "crates/kb-pairing", "crates/kb-transport", "crates/kb-probe-win", "crates/kb-session", "crates/kb-win", "crates/kb-engine"]
+members = ["crates/kb-geometry", "crates/kb-proto", "crates/kb-pairing", "crates/kb-transport", "crates/kb-probe-win", "crates/kb-session", "crates/kb-win", "crates/kb-engine", "crates/kb-android"]
 
 [workspace.package]
 version = "0.1.0"
@@ -23,3 +23,8 @@ quinn = { version = "0.11", default-features = false, features = ["runtime-tokio
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging", "tls12"] }
 rcgen = "0.13"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "net"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = "symbols"

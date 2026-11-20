@@ -8,3 +8,6 @@ local.properties
 *.keystore
 *.pfx
 /dist
+/android/app/src/main/jniLibs
+/android/build
+/android/.kotlin

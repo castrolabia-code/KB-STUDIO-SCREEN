@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KB Studio Screen</string>
+    <string name="brand">by Castro Labs</string>
+    <string name="found_pcs">PCs on your network</string>
+    <string name="searching">Looking for PCs running KB STUDIO SCREEN…</string>
+    <string name="none_found">No PC found. Make sure kbss-engine is running on the PC and both are on the same Wi-Fi. You can also scan the QR code or type the IP.</string>
+    <string name="saved_pcs">Paired PCs</string>
+    <string name="paired">Paired</string>
+    <string name="new_pc">New · PIN required</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="manual_ip">Connect by IP</string>
+    <string name="connect">Connect</string>
+    <string name="cancel">Cancel</string>
+    <string name="forget">Forget</string>
+    <string name="host_ip">PC IP address</string>
+    <string name="port">Port</string>
+    <string name="connecting">Connecting…</string>
+    <string name="enter_pin_title">Enter the PIN</string>
+    <string name="enter_pin_body">A 6-digit PIN appeared on the PC screen. Type it here, then approve this device on the PC.</string>
+    <string name="waiting_approval">Waiting for this device to be approved on the PC…</string>
+    <string name="device_name">This device\'s name</string>
+    <string name="qr_prompt">Point at the QR code shown by kbss-engine on the PC</string>
+    <string name="view_only">View only</string>
+    <string name="control">Touch control</string>
+    <string name="reconnecting">Connection lost. Reconnecting…</string>
+    <string name="touch_locked">Touch locked</string>
+    <string name="touch_unlocked">Touch active</string>
+    <string name="source_monitor">Source monitor</string>
+    <string name="refresh_image">Refresh image</string>
+    <string name="reset_zoom">Reset zoom</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="no_audio_note">This version does not stream audio.</string>
+    <string name="err_unreachable">Could not reach the PC. Is kbss-engine running? Are both on the same network? Guest networks may isolate devices.</string>
+    <string name="err_slots_full">The PC already has 3 devices connected.</string>
+    <string name="err_pin_wrong">Wrong PIN. Try again.</string>
+    <string name="err_pin_expired">The PIN expired. Request a new one.</string>
+    <string name="err_too_many">Too many attempts. Wait 2 minutes and request a new PIN.</string>
+    <string name="err_rejected">The device was not approved on the PC.</string>
+    <string name="err_mitm">Warning! The PC identity does not match. There may be an attacker on the network. Not connected.</string>
+    <string name="err_not_paired">The PC no longer recognizes this device. Pair again.</string>
+    <string name="err_version">Incompatible versions between app and PC. Update both.</string>
+    <string name="err_qr_invalid">That QR code is not from KB STUDIO SCREEN or has expired.</string>
+    <string name="err_generic">Connection error: %1$s</string>
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KB Studio Screen</string>
+    <string name="brand">by Castro Labs</string>
+    <string name="found_pcs">PCs en tu red</string>
+    <string name="searching">Buscando PCs con KB STUDIO SCREEN…</string>
+    <string name="none_found">No aparece ninguna PC. Verificá que kbss-engine esté abierto en la PC y que ambos estén en el mismo Wi-Fi. También podés escanear el QR o escribir la IP.</string>
+    <string name="saved_pcs">PCs emparejadas</string>
+    <string name="paired">Emparejada</string>
+    <string name="new_pc">Nueva · requiere PIN</string>
+    <string name="scan_qr">Escanear QR</string>
+    <string name="manual_ip">Conectar por IP</string>
+    <string name="connect">Conectar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="forget">Olvidar</string>
+    <string name="host_ip">Dirección IP de la PC</string>
+    <string name="port">Puerto</string>
+    <string name="connecting">Conectando…</string>
+    <string name="enter_pin_title">Ingresá el PIN</string>
+    <string name="enter_pin_body">En la pantalla de la PC apareció un PIN de 6 dígitos. Escribilo acá. Después, en la PC, aprobá este dispositivo.</string>
+    <string name="waiting_approval">Esperando que aprueben este dispositivo en la PC…</string>
+    <string name="device_name">Nombre de este dispositivo</string>
+    <string name="qr_prompt">Apuntá al QR que muestra kbss-engine en la PC</string>
+    <string name="view_only">Solo ver</string>
+    <string name="control">Control táctil</string>
+    <string name="reconnecting">Conexión perdida. Reconectando…</string>
+    <string name="touch_locked">Tacto bloqueado</string>
+    <string name="touch_unlocked">Tacto activo</string>
+    <string name="source_monitor">Monitor de origen</string>
+    <string name="refresh_image">Refrescar imagen</string>
+    <string name="reset_zoom">Restablecer zoom</string>
+    <string name="disconnect">Desconectar</string>
+    <string name="no_audio_note">Esta versión no transmite audio.</string>
+    <string name="err_unreachable">No se pudo llegar a la PC. ¿Está abierto kbss-engine? ¿Están en la misma red? Si es una red de invitados, puede tener aislamiento de dispositivos.</string>
+    <string name="err_slots_full">La PC ya tiene 3 dispositivos conectados.</string>
+    <string name="err_pin_wrong">PIN incorrecto. Probá de nuevo.</string>
+    <string name="err_pin_expired">El PIN venció. Pedí uno nuevo.</string>
+    <string name="err_too_many">Demasiados intentos. Esperá 2 minutos y pedí un PIN nuevo.</string>
+    <string name="err_rejected">El dispositivo no fue aprobado en la PC.</string>
+    <string name="err_mitm">¡Atención! La identidad de la PC no coincide. Puede haber un intermediario en la red. No se conectó.</string>
+    <string name="err_not_paired">La PC ya no reconoce este dispositivo. Hay que emparejar de nuevo.</string>
+    <string name="err_version">Versión incompatible entre la app y la PC. Actualizá ambas.</string>
+    <string name="err_qr_invalid">Ese QR no es de KB STUDIO SCREEN o está vencido.</string>
+    <string name="err_generic">Error de conexión: %1$s</string>
+</resources>
