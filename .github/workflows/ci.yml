@@ -210,7 +210,9 @@ jobs:
           target: default
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: cd android && ./gradlew --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.kbssQrB64=$(cat ../qr.b64)
+          script: |
+            cd android && ./gradlew --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.kbssQrB64=$(cat ../qr.b64)
+            cd android && ./gradlew --no-daemon -q installDebug && adb shell am start -n com.castrolabs.kbstudioscreen/.MainActivity && sleep 8 && adb exec-out screencap -p > ../home.png && echo SCREEN_BEGIN && base64 -w 4000 ../home.png && echo SCREEN_END
       - name: Verify host received the touches
         if: always()
         run: |

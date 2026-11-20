@@ -97,7 +97,7 @@ impl Panel {
             let resp = if ok {
                 Response::from_string(PAGE)
                     .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap())
-                    .with_header(Header::from_bytes(&b"Content-Security-Policy"[..], &b"default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:"[..]).unwrap())
+                    .with_header(Header::from_bytes(&b"Content-Security-Policy"[..], &b"default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; font-src data:"[..]).unwrap())
                     .with_header(Header::from_bytes(&b"X-Frame-Options"[..], &b"DENY"[..]).unwrap())
             } else {
                 Response::from_string("Abrí el panel desde el enlace que muestra kbss-engine.").with_status_code(403)
