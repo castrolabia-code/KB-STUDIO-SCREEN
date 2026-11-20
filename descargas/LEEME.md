@@ -1,4 +1,4 @@
-# Descargas de PRUEBA — KB STUDIO SCREEN 0.6.0
+# Descargas de PRUEBA — KB STUDIO SCREEN 0.6.1
 
 Novedades 0.6.0: estética "Studio" profesional (racks, LEDs, displays LCD, azul eléctrico y ámbar); imagen de estudio de fondo y opción de foto propia.
 Novedades 0.4.0: desde el panel, cambiar en vivo monitor y calidad de cada dispositivo; **perfiles de estudio** (Grabación vocal, Mezcla, Mastering, Personalizado).
@@ -9,8 +9,8 @@ cada dispositivo recuerda su monitor y su calidad.
 
 | Archivo | Para | SHA-256 |
 |---|---|---|
-| kbss-engine.exe | PC Windows 10/11 x64 | c42f622d76959ba996a4abcd8316110fb5b96124b4a74648d8dbe632d77ed5dd |
+| kbss-engine.exe | PC Windows 10/11 x64 | 8a6748c45c53f964167b673a813f2b22ebeb4b8b3a93947037b2079771de5d3e |
 | kb-probe-win.exe | PC (diagnóstico, solo lectura) | 4e683bfc46b2faef1d6f49092f5c2058b8e72a182ebae39e95fa59424ed3e87a |
-| KBStudioScreen.apk | Android 10+ | 98c9edbf4bfd1f0b313a6a380d54af986edf7511d43d8eecbc98f572f37077aa |
+| KBStudioScreen.apk | Android 10+ | 751ab663e6e8484d8fea014827bac930832c561de9d131d905164d9d1cc78e40 |
 
 Ejecutables sin firmar (versión de prueba). Guía: ../docs/GUIA-PRUEBA.md

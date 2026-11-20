@@ -86,4 +86,4 @@ cd core && cargo build --release -p kb-probe-win --target x86_64-pc-windows-gnu
 Toolchain usada: Rust 1.97.0, target `x86_64-pc-windows-gnu`, MinGW-w64 GCC 13.2 (Ubuntu).
 
 ## Estética
-La estética "Studio" (0.6.0) está inspirada en una sala de control de un estudio de grabación. La ilustración de fábrica (`design/estudio_kbss.svg`) es un dibujo original de Castro Labs. El usuario puede elegir una foto propia como fondo; esa foto queda sólo en su equipo y no se distribuye.
+La estética "Studio" (0.6.0) está inspirada en una sala de control de un estudio de grabación. La foto de fábrica (`design/estudio_foto.jpg`) fue provista por Castro Labs; **antes de vender, confirmar que se tienen los derechos de uso comercial** (si fue generada por IA o comprada con licencia, conservar el comprobante). Alternativa sin riesgo: la ilustración original `design/estudio_kbss.svg`. El usuario puede elegir una foto propia como fondo; esa foto queda sólo en su equipo y no se distribuye.

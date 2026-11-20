@@ -214,7 +214,7 @@ class MainActivity : ComponentActivity() {
                 SunsetHero(onName = { nameEdit = true })
                 // Foto propia si el usuario eligió una; si no, la ilustración de estudio incluida.
                 (bgImage.value ?: androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.estudio_kbss)).let { img ->
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(if (wide) 200.dp else 140.dp).clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(if (wide) 240.dp else 170.dp).clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))) {
                         androidx.compose.foundation.Image(img, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.matchParentSize())
                         Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x330D1015), Color(0xCC0D1015)))))
                     }
