@@ -1,0 +1,14 @@
+Starting 2 tests on emulator-5554 - 10
+Finished 2 tests on emulator-5554 - 10
+[36;1mgrep -q "APROBADO" demo.log[0m
+[36;1mgrep -q "INJECT Button" demo.log[0m
+APROBADO Emulador CI por QR
+EVENT Connected { slot: 0, name: "Emulador CI", permission: Control }
+STREAM 1280x720 @ 30 fps
+EVENT Streaming { slot: 0, monitor: "DEMO", width: 1280, height: 720, fps: 30, encoder: "demo (H.264 pregrabado)" }
+INJECT Move { p: PointI { x: 640, y: 360 } }
+INJECT Button { p: PointI { x: 640, y: 360 }, button: Left, down: true }
+INJECT Move { p: PointI { x: 640, y: 160 } }
+INJECT Move { p: PointI { x: 640, y: 160 } }
+INJECT Button { p: PointI { x: 640, y: 160 }, button: Left, down: false }
+EVENT Disconnected { slot: 0, name: "Emulador CI" }

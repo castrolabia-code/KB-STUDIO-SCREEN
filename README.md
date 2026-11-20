@@ -3,7 +3,7 @@
 
 Convierte hasta tres dispositivos Android (tablets o teléfonos, en cualquier combinación) en pantallas de una PC con Windows 10/11 x64. Cada dispositivo puede **duplicar** un monitor existente o **extender** el escritorio como monitor real, y se controla con el tacto sobre la interfaz original de Windows (por ejemplo, el mixer de Reason 14). Funciona en red local, sin Internet, sin cuentas y sin suscripciones. No transmite audio.
 
-> **Estado:** Fases 1 (Duplicar) y 2 (Extender) implementadas. Captura, codificación, entrada y driver de monitores virtuales **probados en Windows real (CI)**. La app Android **compila pero todavía no se ejecutó en un dispositivo**. **PENDIENTE** la validación en tu estudio con Reason 14, la tablet EXO y el S23 FE. El driver sólo está firmado para pruebas. Seguí [docs/GUIA-PRUEBA.md](docs/GUIA-PRUEBA.md). Estado detallado: [docs/06-estado-fases-1-2.md](docs/06-estado-fases-1-2.md).
+> **Estado:** Fases 1 (Duplicar) y 2 (Extender) implementadas. Captura, codificación, entrada y driver de monitores virtuales **probados en Windows real (CI)**. La app Android **probada en emulador Android 10 (CI)**, todavía no en un dispositivo físico. **PENDIENTE** la validación en tu estudio con Reason 14, la tablet EXO y el S23 FE. El driver sólo está firmado para pruebas. Seguí [docs/GUIA-PRUEBA.md](docs/GUIA-PRUEBA.md). Estado detallado: [docs/06-estado-fases-1-2.md](docs/06-estado-fases-1-2.md).
 
 ## Documentación
 

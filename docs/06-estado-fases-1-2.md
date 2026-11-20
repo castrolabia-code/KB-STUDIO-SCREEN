@@ -2,7 +2,7 @@
 
 Fecha: 2026-11-20 · Repositorio: `castrolabia-code/KB-STUDIO-SCREEN` · CI: GitHub Actions (Ubuntu + Windows Server 2025 / build 26100, "Test Mode", sin GPU).
 
-**Resumen honesto:** el sistema completo está implementado y la mayor parte está probada automáticamente, incluyendo captura, codificación, entrada y el driver de monitores virtuales **sobre Windows real**. Pero **la app Android todavía no se ejecutó en ningún dispositivo** (sólo se compiló) y nada se probó aún con Reason 14, tu Wi-Fi ni tus equipos. El producto **no está terminado**: faltan las pruebas de aceptación en tu estudio ([GUIA-PRUEBA.md](GUIA-PRUEBA.md)).
+**Resumen honesto:** el sistema completo está implementado y la mayor parte está probada automáticamente: captura, codificación, entrada y el driver de monitores virtuales **sobre Windows real**, y la app **en un emulador Android 10**. Pero la app **todavía no se ejecutó en un dispositivo físico** (EXO, S23 FE) y nada se probó aún con Reason 14, tu Wi-Fi ni tus equipos. El producto **no está terminado**: faltan las pruebas de aceptación en tu estudio ([GUIA-PRUEBA.md](GUIA-PRUEBA.md)).
 
 ## Leyenda
 **PROBADO-CI** = prueba automatizada en verde en GitHub Actions (Windows real o Linux) · **PROBADO-LOCAL** = prueba en esta sesión (Linux) · **PENDIENTE** = falta validar en equipo real · **NO IMPLEMENTADO** = trabajo de fases siguientes.
@@ -26,7 +26,9 @@ Fecha: 2026-11-20 · Repositorio: `castrolabia-code/KB-STUDIO-SCREEN` · CI: Git
 | DPAPI para identidad y lista de confianza | PROBADO-CI | `dpapi_roundtrip` |
 | mDNS (anuncio del host) | Implementado · **PENDIENTE** en tu red | |
 | `kbss-engine.exe` (consola: QR, PIN, aprobación, lista, revocar, permisos, rescatar ventanas) | Compila (MSVC, CI) · **PENDIENTE** de uso real | |
-| App Android: descubrimiento, QR, IP manual, PIN, visor MediaCodec, zoom local, rueda con 2 dedos, bloqueo de tacto, selector de monitor, reconexión, ES/EN | **Compila** (APK en CI) · **NUNCA EJECUTADA** | Sin emulador ni dispositivo en esta sesión |
+| App Android en emulador Android 10 (API 29): carga del núcleo por JNI, emparejamiento QR sobre QUIC, decodificación MediaCodec a Surface (≥ 30 frames recibidos, ≥ 10 decodificados), toques con letterbox y arrastre recibidos por el host, arranque de la pantalla principal | **PROBADO-CI (emulador)** | [evidencia/android-e2e-emulador-api29.txt](evidencia/android-e2e-emulador-api29.txt) |
+| API del cliente (la que usa JNI) contra el host de demostración | PROBADO-LOCAL | `client_smoke`: QR, 20 frames, toque en barra descartado, y=400 → y=360 correcto |
+| App en EXO 10" y S23 FE: descubrimiento mDNS, QR con cámara, PIN, visor, gestos, reconexión | **PENDIENTE** | Pruebas B2–B11 de la guía |
 | Fader de Reason 14 con arrastre continuo | **PENDIENTE** | Prueba B5 de la guía |
 | Latencia y FPS sobre tu Wi-Fi, 720p/1080p, 15/30/60 FPS | **PENDIENTE** | Prueba B11 |
 | Cursor del mouse dibujado en la imagen | **NO IMPLEMENTADO** | Desktop Duplication no incluye el cursor; falta componerlo |
@@ -64,11 +66,10 @@ El driver está firmado con un certificado de **prueba** y sólo se probó en un
 
 ## Números de las pruebas
 - Rust: 37 pruebas en Linux (unitarias + integración + e2e), más 3 pruebas sobre Windows real (captura/codificación/entrada, DPAPI, driver). Clippy sin advertencias en Linux y Windows.
-- CI: 4 jobs (Linux, Windows, Android, driver), todos en verde en el commit `61669bb`.
+- CI: 5 jobs (Linux, Windows, APK, driver en Windows, app en emulador Android 10), todos en verde.
 
 ## Próximas tareas
 1. **Tus pruebas** con la [guía](GUIA-PRUEBA.md), sobre todo B5 (fader de Reason) y B11 (rendimiento).
-2. Emulador Android en CI para ejecutar la app de forma automática (los runners Linux de GitHub tienen virtualización).
 3. Dibujar el cursor en la imagen y ruta de codificación 100 % GPU.
 4. Fase 3: perfiles (Grabación vocal / Mezcla / Mastering), UI del host, posición del monitor virtual.
 5. F2-01: validar la instalación del driver con Secure Boot activo usando un certificado propio.
