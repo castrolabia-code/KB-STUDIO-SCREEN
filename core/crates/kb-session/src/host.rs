@@ -38,6 +38,9 @@ pub trait HostUi: Send + Sync + 'static {
     fn hide_pin(&self, device: &str);
     /// Debe responder `Some(permiso)` sólo si el usuario aprobó explícitamente.
     fn approve(&self, req: ApprovalRequest) -> oneshot::Receiver<Option<Permission>>;
+    /// Confirmación para operaciones sensibles pedidas desde Android
+    /// (p. ej. crear un monitor virtual). `true` sólo si el usuario aceptó.
+    fn confirm(&self, device: &str, action: &str) -> oneshot::Receiver<bool>;
     fn event(&self, ev: HostEvent);
 }
 
@@ -68,6 +71,8 @@ impl From<tokio::time::error::Elapsed> for SessionError {
 pub struct HostConfig {
     pub host_id: [u8; 16],
     pub host_name: String,
+    /// Cuánto se conserva un monitor virtual tras una desconexión (normalmente `EXTEND_GRACE`).
+    pub extend_grace: Duration,
 }
 
 struct Inner {
@@ -87,7 +92,13 @@ struct Inner {
     hub: CaptureHub,
     arbiter: InputArbiter,
     conns: Mutex<HashMap<Fingerprint, (u64, quinn::Connection)>>,
+    /// Monitores virtuales vivos por dispositivo: (ranura, monitor, generación de sesión).
+    extended: Mutex<HashMap<Fingerprint, (u8, MonitorDesc, u64)>>,
 }
+
+/// Tiempo que se conserva un monitor virtual tras una desconexión, esperando
+/// que el mismo dispositivo vuelva (corte breve de Wi-Fi).
+pub const EXTEND_GRACE: Duration = Duration::from_secs(30);
 
 #[derive(Clone)]
 pub struct Host {
@@ -121,6 +132,7 @@ impl Host {
                 next_gen: std::sync::atomic::AtomicU64::new(1),
                 arbiter: InputArbiter::default(),
                 conns: Mutex::new(HashMap::new()),
+                extended: Mutex::new(HashMap::new()),
             }),
         }
     }
@@ -263,7 +275,7 @@ async fn handle(inner: Arc<Inner>, incoming: quinn::Incoming) -> Result<(), Sess
     if let Some((_, old)) = inner.conns.lock().unwrap().insert(peer, (gen, conn.clone())) {
         old.close(2u32.into(), b"replaced");
     }
-    run_session(&inner, conn, tx, rx, peer, slot, device_name, screen, decoder).await
+    run_session(&inner, conn, tx, rx, peer, slot, gen, device_name, screen, decoder).await
 }
 
 fn pair_error_code(e: &PairError) -> ErrorCode {
@@ -483,6 +495,7 @@ async fn run_session(
     mut rx: quinn::RecvStream,
     peer: Fingerprint,
     slot: u8,
+    gen: u64,
     name: String,
     mut screen: ScreenInfo,
     decoder: DecoderCaps,
@@ -498,6 +511,18 @@ async fn run_session(
         send(&mut tx, Message::Error { code: ErrorCode::Internal }).await?;
         return Err(SessionError::Rejected("no hay monitores"));
     };
+    // Reconexión tras un corte: si este dispositivo tenía un monitor virtual, se retoma.
+    let mut mode = Mode::Mirror { monitor_id: monitor.id.clone() };
+    {
+        let mut ext = inner.extended.lock().unwrap();
+        if let Some((s0, m, g)) = ext.get_mut(&peer) {
+            if *s0 == slot && topo.by_id(&m.id).is_some() {
+                *g = gen;
+                monitor = m.clone();
+                mode = Mode::Extend { position: ExtendPosition::RightOf };
+            }
+        }
+    }
     let permission = inner.trust.lock().unwrap().get(&peer).map(|d| d.permission).unwrap_or(Permission::ViewOnly);
     inner.ui.event(HostEvent::Connected { slot, name: name.clone(), permission });
 
@@ -509,7 +534,7 @@ async fn run_session(
         &mut tx,
         Message::SessionConfig {
             slot,
-            mode: Mode::Mirror { monitor_id: monitor.id.clone() },
+            mode: mode.clone(),
             permission,
             params: params.clone(),
             present_rotation: Rotation::R0,
@@ -548,7 +573,7 @@ async fn run_session(
                     &mut tx,
                     Message::SessionConfig {
                         slot,
-                        mode: Mode::Mirror { monitor_id: monitor.id.clone() },
+                        mode: mode.clone(),
                         permission: perm,
                         params: params.clone(),
                         present_rotation: Rotation::R0,
@@ -557,29 +582,62 @@ async fn run_session(
                 )
                 .await?;
             }
-            Message::ModeChangeRequest { mode } => {
+            Message::ModeChangeRequest { mode: requested } => {
                 let can = inner.trust.lock().unwrap().may_control(&peer);
-                let reply = match mode {
-                    Mode::Mirror { monitor_id } if can => match inner.platform.topology().by_id(&monitor_id).cloned() {
+                let mut reply: Option<ErrorCode> = None;
+                match requested {
+                    _ if !can => reply = Some(ErrorCode::PermissionDenied),
+                    Mode::Mirror { monitor_id } => match inner.platform.topology().by_id(&monitor_id).cloned() {
                         Some(m) => {
+                            // Volver a duplicar: el monitor virtual propio se retira.
+                            release_virtual(inner, &peer);
                             monitor = m;
-                            params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, params.profile);
-                            drop(video);
-                            video = start_video(inner, &conn, &monitor, params.clone(), slot);
-                            None
+                            mode = Mode::Mirror { monitor_id };
                         }
-                        None => Some(ErrorCode::ModeChangeRejected),
+                        None => reply = Some(ErrorCode::ModeChangeRejected),
                     },
-                    Mode::Mirror { .. } => Some(ErrorCode::PermissionDenied),
-                    Mode::Extend { .. } => Some(ErrorCode::VirtualDisplayUnavailable),
-                };
+                    Mode::Extend { position } => {
+                        if matches!(mode, Mode::Extend { .. }) {
+                            // Ya extendido: nada que hacer.
+                        } else if !timeout(Duration::from_secs(60), inner.ui.confirm(&name, "extender el escritorio con un monitor virtual"))
+                            .await
+                            .ok()
+                            .and_then(|r| r.ok())
+                            .unwrap_or(false)
+                        {
+                            reply = Some(ErrorCode::ModeChangeRejected);
+                        } else {
+                            // Monitor virtual con la resolución REAL del dispositivo (apaisado).
+                            let (w, h) = (screen.width_px.max(screen.height_px) & !1, screen.width_px.min(screen.height_px) & !1);
+                            let p2 = inner.platform.clone();
+                            let r = tokio::task::spawn_blocking(move || p2.add_virtual_monitor(slot, w, h)).await;
+                            match r {
+                                Ok(Ok(m)) => {
+                                    inner.extended.lock().unwrap().insert(peer, (slot, m.clone(), gen));
+                                    monitor = m;
+                                    mode = Mode::Extend { position };
+                                }
+                                Ok(Err(e)) => {
+                                    log(&format!("ranura {slot}: no se pudo crear el monitor virtual: {e}"));
+                                    reply = Some(ErrorCode::VirtualDisplayUnavailable);
+                                }
+                                Err(_) => reply = Some(ErrorCode::VirtualDisplayUnavailable),
+                            }
+                        }
+                    }
+                }
+                if reply.is_none() {
+                    params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, params.profile);
+                    drop(video);
+                    video = start_video(inner, &conn, &monitor, params.clone(), slot);
+                }
                 send(&mut tx, Message::ModeChangeResult { accepted: reply.is_none(), reason: reply }).await?;
                 if reply.is_none() {
                     send(
                         &mut tx,
                         Message::SessionConfig {
                             slot,
-                            mode: Mode::Mirror { monitor_id: monitor.id.clone() },
+                            mode: mode.clone(),
                             permission: if can { Permission::Control } else { Permission::ViewOnly },
                             params: params.clone(),
                             present_rotation: Rotation::R0,
@@ -600,7 +658,26 @@ async fn run_session(
     }
     drop(video);
     inner.ui.event(HostEvent::Disconnected { slot, name });
+    // Monitor virtual: se conserva EXTEND_GRACE por si el dispositivo vuelve.
+    if inner.extended.lock().unwrap().get(&peer).is_some_and(|(_, _, g)| *g == gen) {
+        let inner2 = inner.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(inner2.cfg.extend_grace).await;
+            let still_ours = inner2.extended.lock().unwrap().get(&peer).is_some_and(|(_, _, g)| *g == gen);
+            if still_ours {
+                release_virtual(&inner2, &peer);
+            }
+        });
+    }
     result
+}
+
+/// Quita el monitor virtual de un dispositivo (si tiene) en un hilo aparte.
+fn release_virtual(inner: &Arc<Inner>, peer: &Fingerprint) {
+    if let Some((slot, _, _)) = inner.extended.lock().unwrap().remove(peer) {
+        let p = inner.platform.clone();
+        std::thread::spawn(move || p.remove_virtual_monitor(slot));
+    }
 }
 
 /// Modo mouse: el primer dedo es el puntero; arrastre sostenido = botón apretado.

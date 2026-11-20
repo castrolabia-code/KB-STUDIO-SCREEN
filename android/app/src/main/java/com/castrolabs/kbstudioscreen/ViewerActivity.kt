@@ -149,7 +149,12 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
                     }
                     "monitors" -> runOnUiThread { refreshMonitors() }
                     "mode_result" -> if (!ev.optBoolean("accepted")) runOnUiThread {
-                        Toast.makeText(this, ev.optString("reason"), Toast.LENGTH_SHORT).show()
+                        val msg = when (ev.optString("reason")) {
+                            "VirtualDisplayUnavailable" -> R.string.err_no_virtual
+                            "PermissionDenied" -> R.string.err_mode_permission
+                            else -> R.string.err_mode_rejected
+                        }
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     }
                     "closed" -> { if (alive) reconnect(); break }
                     "error" -> if (ev.optString("code") == "NotPaired") runOnUiThread {
@@ -352,6 +357,11 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
         Box {
             ToolButton(Icons.Filled.Monitor, stringResource(R.string.source_monitor)) { refreshMonitors(); open = true }
             DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.extend_new) + if (currentMonitor.value == "extend") "  ✓" else "", color = Orange) },
+                    leadingIcon = { Icon(Icons.Filled.AddToQueue, null, tint = Orange) },
+                    onClick = { open = false; if (handle != 0L) NativeCore.extend(handle) })
+                HorizontalDivider()
                 monitors.value.forEach { (id, label) ->
                     DropdownMenuItem(
                         text = { Text(label + if (id == currentMonitor.value) "  ✓" else "") },

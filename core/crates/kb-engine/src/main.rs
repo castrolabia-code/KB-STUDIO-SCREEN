@@ -99,7 +99,11 @@ impl TrustPersistence for FilePersist {
 
 // ------------------------------------------------------------ consola
 
-type Pending = VecDeque<(ApprovalRequest, oneshot::Sender<Option<Permission>>)>;
+enum Ask {
+    Approve(ApprovalRequest, oneshot::Sender<Option<Permission>>),
+    Confirm(String, oneshot::Sender<bool>),
+}
+type Pending = VecDeque<Ask>;
 
 struct ConsoleUi {
     pending: Mutex<Pending>,
@@ -120,7 +124,13 @@ impl HostUi for ConsoleUi {
             "\n  ¿Aprobar «{}» ({:?}, por {}, huella {})?\n    [c] control táctil   [v] solo ver   [n] rechazar  → escribí la letra y Enter",
             req.device_name, req.kind, req.method, req.fingerprint_short
         );
-        self.pending.lock().unwrap().push_back((req, tx));
+        self.pending.lock().unwrap().push_back(Ask::Approve(req, tx));
+        rx
+    }
+    fn confirm(&self, device: &str, action: &str) -> oneshot::Receiver<bool> {
+        let (tx, rx) = oneshot::channel();
+        println!("\n  «{device}» pide {action}. ¿Permitir? [s] sí  [n] no  → escribí la letra y Enter");
+        self.pending.lock().unwrap().push_back(Ask::Confirm(device.to_string(), tx));
         rx
     }
     fn event(&self, ev: HostEvent) {
@@ -268,7 +278,7 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     };
     let ui = Arc::new(ConsoleUi { pending: Mutex::new(VecDeque::new()) });
     let host = Host::new(
-        HostConfig { host_id, host_name: name.clone() },
+        HostConfig { host_id, host_name: name.clone(), extend_grace: kb_session::host::EXTEND_GRACE },
         host_fp,
         platform.clone(),
         ui.clone(),
@@ -311,18 +321,28 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
         let l = line.trim().to_lowercase();
-        if let Some((req, tx)) = ui.pending.lock().unwrap().pop_front() {
-            let d = match l.as_str() {
-                "c" => Some(Permission::Control),
-                "v" => Some(Permission::ViewOnly),
-                _ => None,
-            };
-            match d {
-                Some(p) => println!("  «{}» aprobado: {}", req.device_name, perm_es(p)),
-                None => println!("  «{}» rechazado.", req.device_name),
+        let ask = ui.pending.lock().unwrap().pop_front();
+        match ask {
+            Some(Ask::Approve(req, tx)) => {
+                let d = match l.as_str() {
+                    "c" => Some(Permission::Control),
+                    "v" => Some(Permission::ViewOnly),
+                    _ => None,
+                };
+                match d {
+                    Some(p) => println!("  «{}» aprobado: {}", req.device_name, perm_es(p)),
+                    None => println!("  «{}» rechazado.", req.device_name),
+                }
+                let _ = tx.send(d);
+                continue;
             }
-            let _ = tx.send(d);
-            continue;
+            Some(Ask::Confirm(device, tx)) => {
+                let ok = l == "s" || l == "si" || l == "sí";
+                println!("  «{device}»: {}", if ok { "permitido" } else { "denegado" });
+                let _ = tx.send(ok);
+                continue;
+            }
+            None => {}
         }
         let mut parts = l.split_whitespace();
         let cmd = parts.next().unwrap_or("");

@@ -30,6 +30,21 @@ mod platform {
 
     pub struct WinPlatform {
         input: Arc<crate::input::SendInputSink>,
+        /// Driver de pantallas virtuales; se abre la primera vez que alguien pide "Extender".
+        idd: std::sync::Mutex<Option<Arc<crate::idd::VirtualDisplays>>>,
+    }
+
+    impl WinPlatform {
+        fn idd(&self) -> Result<Arc<crate::idd::VirtualDisplays>, String> {
+            let mut g = self.idd.lock().unwrap();
+            if let Some(v) = g.as_ref() {
+                return Ok(v.clone());
+            }
+            let v = crate::idd::VirtualDisplays::open()?;
+            crate::idd::wait_ready(&v, std::time::Duration::from_secs(10))?;
+            *g = Some(v.clone());
+            Ok(v)
+        }
     }
 
     impl WinPlatform {
@@ -43,7 +58,7 @@ mod platform {
                 let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
             }
             crate::encode::mf_startup()?;
-            Ok(Self { input: Arc::new(crate::input::SendInputSink) })
+            Ok(Self { input: Arc::new(crate::input::SendInputSink), idd: std::sync::Mutex::new(None) })
         }
     }
 
@@ -59,6 +74,40 @@ mod platform {
         }
         fn input(&self) -> Arc<dyn InputSink> {
             self.input.clone()
+        }
+
+        fn add_virtual_monitor(&self, slot: u8, width: u32, height: u32) -> Result<kb_geometry::MonitorDesc, String> {
+            let v = self.idd()?;
+            let before: Vec<String> = crate::monitors::topology().monitors.into_iter().map(|m| m.id).collect();
+            v.add(slot as u32, width, height, 60)?;
+            // Esperar a que Windows lo agregue al escritorio (normalmente < 2 s).
+            let t = std::time::Instant::now();
+            loop {
+                if let Some(m) = crate::monitors::topology()
+                    .monitors
+                    .into_iter()
+                    .find(|m| m.is_virtual && !before.contains(&m.id) && m.bounds.w as u32 == width && m.bounds.h as u32 == height)
+                {
+                    return Ok(m);
+                }
+                if t.elapsed() > std::time::Duration::from_secs(15) {
+                    let _ = v.remove(slot as u32);
+                    return Err("Windows no activó el monitor virtual a tiempo".into());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }
+        }
+
+        fn remove_virtual_monitor(&self, slot: u8) {
+            if let Ok(v) = self.idd() {
+                let _ = v.remove(slot as u32);
+                // Windows suele mover las ventanas solo; esto es la red de seguridad.
+                std::thread::sleep(std::time::Duration::from_millis(1500));
+                let n = crate::windows_rescue::rescue_offscreen_windows(&crate::monitors::topology());
+                if n > 0 {
+                    kb_session::log(&format!("ventanas rescatadas tras quitar el monitor virtual: {n}"));
+                }
+            }
         }
     }
 }

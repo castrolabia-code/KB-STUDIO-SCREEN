@@ -82,6 +82,13 @@ pub trait Platform: Send + Sync + 'static {
     fn open_capture(&self, monitor_id: &str) -> Result<Box<dyn Capturer>, CaptureError>;
     fn open_encoder(&self, params: &StreamParams) -> Result<Box<dyn VideoEncoder>, String>;
     fn input(&self) -> Arc<dyn InputSink>;
+    /// Crea un monitor virtual REAL (driver IddCx) para la ranura y devuelve
+    /// su descripción cuando Windows ya lo reconoce.
+    fn add_virtual_monitor(&self, _slot: u8, _width: u32, _height: u32) -> Result<kb_geometry::MonitorDesc, String> {
+        Err("pantallas virtuales no disponibles en esta plataforma".into())
+    }
+    /// Quita el monitor virtual de la ranura y rescata ventanas que hayan quedado fuera.
+    fn remove_virtual_monitor(&self, _slot: u8) {}
 }
 
 // ------------------------------------------------------------------ parámetros

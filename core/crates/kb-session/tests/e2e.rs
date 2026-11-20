@@ -14,6 +14,7 @@ use tokio::sync::oneshot;
 
 struct FakePlatform {
     injected: Arc<Mutex<Vec<Injected>>>,
+    virtuals: Arc<Mutex<Vec<(u8, MonitorDesc)>>>,
 }
 struct FakeCap(u32);
 impl Capturer for FakeCap {
@@ -44,7 +45,18 @@ impl InputSink for Rec {
 impl Platform for FakePlatform {
     fn topology(&self) -> Topology {
         let m = |id: &str, b: Rect, primary| MonitorDesc { id: id.into(), name: id.into(), bounds: b, work_area: b, dpi: 96, primary, is_virtual: false };
-        Topology { monitors: vec![m("LEFT", Rect::new(-1920, 0, 1920, 1080), false), m("MAIN", Rect::new(0, 0, 2560, 1440), true)] }
+        let mut v = vec![m("LEFT", Rect::new(-1920, 0, 1920, 1080), false), m("MAIN", Rect::new(0, 0, 2560, 1440), true)];
+        v.extend(self.virtuals.lock().unwrap().iter().map(|(_, d)| d.clone()));
+        Topology { monitors: v }
+    }
+    fn add_virtual_monitor(&self, slot: u8, w: u32, h: u32) -> Result<MonitorDesc, String> {
+        let b = Rect::new(2560 + slot as i32 * 3000, 0, w as i32, h as i32);
+        let d = MonitorDesc { id: format!("VIRT{slot}"), name: "KBSS Pantalla".into(), bounds: b, work_area: b, dpi: 96, primary: false, is_virtual: true };
+        self.virtuals.lock().unwrap().push((slot, d.clone()));
+        Ok(d)
+    }
+    fn remove_virtual_monitor(&self, slot: u8) {
+        self.virtuals.lock().unwrap().retain(|(s, _)| *s != slot);
     }
     fn open_capture(&self, _id: &str) -> Result<Box<dyn Capturer>, CaptureError> {
         Ok(Box::new(FakeCap(0)))
@@ -67,6 +79,11 @@ impl HostUi for TestUi {
         *self.pin.lock().unwrap() = Some(pin.to_string());
     }
     fn hide_pin(&self, _d: &str) {}
+    fn confirm(&self, _d: &str, _a: &str) -> oneshot::Receiver<bool> {
+        let (tx, rx) = oneshot::channel();
+        let _ = tx.send(true);
+        rx
+    }
     fn approve(&self, _r: ApprovalRequest) -> oneshot::Receiver<Option<Permission>> {
         let (tx, rx) = oneshot::channel();
         let _ = tx.send(*self.approve_with.lock().unwrap());
@@ -84,6 +101,7 @@ struct Rig {
     addr: std::net::SocketAddr,
     ui: Arc<TestUi>,
     injected: Arc<Mutex<Vec<Injected>>>,
+    virtuals: Arc<Mutex<Vec<(u8, MonitorDesc)>>>,
     host_fp: kb_pairing::Fingerprint,
 }
 
@@ -93,18 +111,19 @@ fn rig(approve: Option<Permission>) -> Rig {
     let ep = server_endpoint(&id, "127.0.0.1:0".parse().unwrap()).unwrap();
     let addr = ep.local_addr().unwrap();
     let injected = Arc::new(Mutex::new(Vec::new()));
+    let virtuals = Arc::new(Mutex::new(Vec::new()));
     let ui = Arc::new(TestUi { approve_with: Mutex::new(approve), pin: Mutex::new(None) });
     let host = Host::new(
-        HostConfig { host_id: [1; 16], host_name: "PC Estudio".into() },
+        HostConfig { host_id: [1; 16], host_name: "PC Estudio".into(), extend_grace: Duration::from_millis(800) },
         host_fp,
-        Arc::new(FakePlatform { injected: injected.clone() }),
+        Arc::new(FakePlatform { injected: injected.clone(), virtuals: virtuals.clone() }),
         ui.clone(),
         Arc::new(NoPersist),
         TrustStore::default(),
     );
     let h = host.clone();
     tokio::spawn(async move { h.serve(ep).await });
-    Rig { host, addr, ui, injected, host_fp }
+    Rig { host, addr, ui, injected, virtuals, host_fp }
 }
 
 fn info(name: &str) -> ClientInfo {
@@ -287,4 +306,75 @@ async fn three_slots_then_full_and_single_cursor_arbitration() {
     // Liberado el cursor, el segundo ya puede.
     clients[1].send(&touch(PointerPhase::Down, 60000, 60000)).await.unwrap();
     assert_eq!(wait_injected(&r, 6).await.len(), 6);
+}
+
+async fn wait_mode(c: &Client) -> (bool, Option<Mode>) {
+    let mut accepted = None;
+    loop {
+        match tokio::time::timeout(Duration::from_secs(5), c.recv_control()).await.unwrap().unwrap() {
+            Message::ModeChangeResult { accepted: a, .. } => {
+                accepted = Some(a);
+                if !a {
+                    return (false, None);
+                }
+            }
+            Message::SessionConfig { mode, .. } if accepted == Some(true) => return (true, Some(mode)),
+            _ => {}
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn extend_creates_real_resolution_monitor_survives_brief_drop_and_cleans_up() {
+    let r = rig(Some(Permission::Control));
+    let dev = Identity::generate().unwrap();
+    let (c, _) = pair_by_pin(&r, &dev, "Tablet EXO").await.unwrap();
+    c.send(&Message::ModeChangeRequest { mode: Mode::Extend { position: ExtendPosition::RightOf } }).await.unwrap();
+    let (ok, mode) = wait_mode(&c).await;
+    assert!(ok);
+    assert!(matches!(mode, Some(Mode::Extend { .. })));
+    // Monitor virtual con la resolución real de la tablet (1280x800), no 1080p fija.
+    let v = r.virtuals.lock().unwrap().clone();
+    assert_eq!(v.len(), 1);
+    assert_eq!((v[0].1.bounds.w, v[0].1.bounds.h), (1280, 800));
+    // El tacto cae en el monitor virtual.
+    c.send(&touch(PointerPhase::Down, 0, 0)).await.unwrap();
+    c.send(&touch(PointerPhase::Up, 0, 0)).await.unwrap();
+    let ev = wait_injected(&r, 4).await;
+    assert_eq!(ev[0], Injected::Move { p: PointI { x: v[0].1.bounds.x, y: 0 } });
+
+    // Corte breve: el monitor sigue y al volver se retoma Extender.
+    c.close();
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(r.virtuals.lock().unwrap().len(), 1, "se conserva durante la gracia");
+    let (c2, stage) = Client::connect(r.addr, &dev, info("Tablet EXO"), Auth::Trusted(r.host_fp)).await.unwrap();
+    match stage {
+        Stage::Ready(s) => assert!(matches!(s.mode, Mode::Extend { .. }), "retoma el monitor virtual"),
+        _ => panic!(),
+    }
+    tokio::time::sleep(Duration::from_millis(1200)).await;
+    assert_eq!(r.virtuals.lock().unwrap().len(), 1, "la sesión retomada es dueña del monitor");
+
+    // Volver a duplicar retira el monitor virtual.
+    c2.send(&Message::ModeChangeRequest { mode: Mode::Mirror { monitor_id: "MAIN".into() } }).await.unwrap();
+    assert!(wait_mode(&c2).await.0);
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert!(r.virtuals.lock().unwrap().is_empty());
+
+    // Extender y desaparecer: tras la gracia, se retira solo.
+    c2.send(&Message::ModeChangeRequest { mode: Mode::Extend { position: ExtendPosition::RightOf } }).await.unwrap();
+    assert!(wait_mode(&c2).await.0);
+    c2.close();
+    tokio::time::sleep(Duration::from_millis(1500)).await;
+    assert!(r.virtuals.lock().unwrap().is_empty(), "sin reconexión el monitor virtual se retira");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn view_only_cannot_create_virtual_monitors() {
+    let r = rig(Some(Permission::ViewOnly));
+    let dev = Identity::generate().unwrap();
+    let (c, _) = pair_by_pin(&r, &dev, "Cantante").await.unwrap();
+    c.send(&Message::ModeChangeRequest { mode: Mode::Extend { position: ExtendPosition::RightOf } }).await.unwrap();
+    assert!(!wait_mode(&c).await.0);
+    assert!(r.virtuals.lock().unwrap().is_empty());
 }

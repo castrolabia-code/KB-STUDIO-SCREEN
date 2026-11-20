@@ -42,4 +42,8 @@
     <string name="err_version">Incompatible versions between app and PC. Update both.</string>
     <string name="err_qr_invalid">That QR code is not from KB STUDIO SCREEN or has expired.</string>
     <string name="err_generic">Connection error: %1$s</string>
+    <string name="extend_new">Extend desktop (new screen)</string>
+    <string name="err_no_virtual">The virtual display driver is not installed on the PC. Use Mirror or install it on the PC.</string>
+    <string name="err_mode_permission">Only a device with control permission can change the source.</string>
+    <string name="err_mode_rejected">The PC did not approve the change.</string>
 </resources>

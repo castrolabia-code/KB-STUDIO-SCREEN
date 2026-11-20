@@ -42,4 +42,8 @@
     <string name="err_version">Versión incompatible entre la app y la PC. Actualizá ambas.</string>
     <string name="err_qr_invalid">Ese QR no es de KB STUDIO SCREEN o está vencido.</string>
     <string name="err_generic">Error de conexión: %1$s</string>
+    <string name="extend_new">Extender escritorio (pantalla nueva)</string>
+    <string name="err_no_virtual">La PC no tiene instalado el driver de pantallas virtuales. Usá Duplicar o instalalo en la PC.</string>
+    <string name="err_mode_permission">Sólo un dispositivo con control puede cambiar el origen.</string>
+    <string name="err_mode_rejected">La PC no aprobó el cambio.</string>
 </resources>

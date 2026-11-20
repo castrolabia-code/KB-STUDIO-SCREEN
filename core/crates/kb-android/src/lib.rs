@@ -234,6 +234,14 @@ pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_selectMonit
     }
 }
 
+/// Pide a la PC un monitor virtual (modo Extender). La PC confirma con el usuario.
+#[no_mangle]
+pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_extend(_env: JNIEnv, _c: JClass, h: jlong) {
+    if let Some(s) = session(h) {
+        s.send(kb_proto::Message::ModeChangeRequest { mode: kb_proto::Mode::Extend { position: kb_proto::ExtendPosition::RightOf } });
+    }
+}
+
 #[no_mangle]
 pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_monitors(mut env: JNIEnv, _c: JClass, h: jlong) -> jstring {
     let j = session(h).map(|s| s.monitors_json()).unwrap_or_else(|| "[]".into());
