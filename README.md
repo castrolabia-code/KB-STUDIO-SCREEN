@@ -3,7 +3,7 @@
 
 Convierte hasta tres dispositivos Android (tablets o teléfonos, en cualquier combinación) en pantallas de una PC con Windows 10/11 x64. Cada dispositivo puede **duplicar** un monitor existente o **extender** el escritorio como monitor real, y se controla con el tacto sobre la interfaz original de Windows (por ejemplo, el mixer de Reason 14). Funciona en red local, sin Internet, sin cuentas y sin suscripciones. No transmite audio.
 
-> **Estado:** Fases 1 (Duplicar) y 2 (Extender) implementadas. Captura, codificación, entrada y driver de monitores virtuales **probados en Windows real (CI)**. La app Android **probada en emulador Android 10 (CI)**, todavía no en un dispositivo físico. **PENDIENTE** la validación en tu estudio con Reason 14, la tablet EXO y el S23 FE. El driver sólo está firmado para pruebas. Seguí [docs/GUIA-PRUEBA.md](docs/GUIA-PRUEBA.md). Estado detallado: [docs/06-estado-fases-1-2.md](docs/06-estado-fases-1-2.md).
+> **Estado: versión 0.7.0 terminada.** Instalador de Windows, app Android, panel de control, modo Extender (driver), modo cantante y perfiles. Ver [docs/07-cierre-del-proyecto.md](docs/07-cierre-del-proyecto.md) y el [manual de uso](docs/MANUAL.md).
 
 ## Documentación
 
@@ -17,6 +17,8 @@ Convierte hasta tres dispositivos Android (tablets o teléfonos, en cualquier co
 | [05-estado-fase0.md](docs/05-estado-fase0.md) | Estado de la Fase 0 |
 | [06-estado-fases-1-2.md](docs/06-estado-fases-1-2.md) | Estado de las Fases 1 y 2: IMPLEMENTADO / PROBADO / PENDIENTE / BLOQUEADO |
 | [GUIA-PRUEBA.md](docs/GUIA-PRUEBA.md) | Guía paso a paso para probar en tu estudio |
+| [MANUAL.md](docs/MANUAL.md) | **Manual de uso** |
+| [07-cierre-del-proyecto.md](docs/07-cierre-del-proyecto.md) | **Cierre**: criterios de aceptación, evidencias y pendientes externos |
 
 ## Estructura
 
@@ -33,9 +35,16 @@ core/                      Workspace Rust (mismo núcleo en la PC y en Android)
   crates/kb-probe-win      Sonda de diagnóstico (solo lectura)
 android/                   App Kotlin + Jetpack Compose (Android 10+)
 driver/kbss-idd/           Driver IddCx de pantallas virtuales (C++, WDK por NuGet)
+installer/                 Instalador de Windows (NSIS)
+design/                    Arte: foto e ilustración de estudio
 docs/                      Documentación, evidencias y guía de prueba
 .github/workflows/ci.yml   Linux + Windows real + APK + driver instalado en Windows de CI
 ```
+
+## Descargas
+
+- Windows: [descargas/KBStudioScreen-Setup.exe](descargas/KBStudioScreen-Setup.exe)
+- Android: [descargas/KBStudioScreen.apk](descargas/KBStudioScreen.apk)
 
 ## Compilar y probar (Linux, macOS o Windows con Rust ≥ 1.80)
 

@@ -1,16 +1,13 @@
-# Descargas de PRUEBA — KB STUDIO SCREEN 0.6.1
+# Descargas — KB STUDIO SCREEN 0.7.0
 
-Novedades 0.6.0: estética "Studio" profesional (racks, LEDs, displays LCD, azul eléctrico y ámbar); imagen de estudio de fondo y opción de foto propia.
-Novedades 0.4.0: desde el panel, cambiar en vivo monitor y calidad de cada dispositivo; **perfiles de estudio** (Grabación vocal, Mezcla, Mastering, Personalizado).
-Novedades 0.3.0: **panel de control** en el navegador de la PC (se abre solo al iniciar kbss-engine).
-Novedades 0.2.0: **modo cantante** (letras PDF/texto en la tablet, controladas desde la PC).
-Novedades 0.1.1: cursor del mouse visible en la imagen; menú **Calidad** (Mezcla / Letras / Automático);
-cada dispositivo recuerda su monitor y su calidad.
+**Recomendado:** en la PC, `KBStudioScreen-Setup.exe`; en el teléfono/tablet, `KBStudioScreen.apk`. Manual: `../docs/MANUAL.md`.
 
 | Archivo | Para | SHA-256 |
 |---|---|---|
-| kbss-engine.exe | PC Windows 10/11 x64 | 8a6748c45c53f964167b673a813f2b22ebeb4b8b3a93947037b2079771de5d3e |
-| kb-probe-win.exe | PC (diagnóstico, solo lectura) | 4e683bfc46b2faef1d6f49092f5c2058b8e72a182ebae39e95fa59424ed3e87a |
-| KBStudioScreen.apk | Android 10+ | 751ab663e6e8484d8fea014827bac930832c561de9d131d905164d9d1cc78e40 |
+| KBStudioScreen-Setup.exe | PC — instalador (recomendado) | 62927aba05631d5fd999971a2f9a32c69c076c70a4356a25c259c92b36fb63ef |
+| KBStudioScreen.apk | Android 10+ | 624130f77bacedf570f817da0fcccfb4e179ae8cc6f4f1de90465f0d9ddd677d |
+| kbss-engine.exe | PC — motor portable (sin instalar) | d97033b8ac6d8d5dc9a2dc86fbdb33a4eeaa3616a21075907335e6fe30daa0a9 |
+| kb-probe-win.exe | PC — diagnóstico (solo lectura) | bc9e75f3c1809786c6fd0713ce6ab87e93ac14d089a3349cd23085c65728ef41 |
 
-Ejecutables sin firmar (versión de prueba). Guía: ../docs/GUIA-PRUEBA.md
+Versión 0.7.0: instalador de Windows, manual, estética de estudio, perfiles, modo cantante, panel de control.
+Los ejecutables aún no tienen firma digital comercial (ver docs/07-cierre-del-proyecto.md).

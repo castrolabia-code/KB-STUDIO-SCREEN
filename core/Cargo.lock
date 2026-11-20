@@ -419,7 +419,7 @@ dependencies = [
 
 [[package]]
 name = "kb-android"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "base64",
  "jni",
@@ -434,7 +434,7 @@ dependencies = [
 
 [[package]]
 name = "kb-engine"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "base64",
  "if-addrs",
@@ -456,14 +456,14 @@ dependencies = [
 
 [[package]]
 name = "kb-geometry"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "kb-pairing"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "base64",
  "hmac",
@@ -478,7 +478,7 @@ dependencies = [
 
 [[package]]
 name = "kb-probe-win"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "kb-proto"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "kb-geometry",
  "postcard",
@@ -498,7 +498,7 @@ dependencies = [
 
 [[package]]
 name = "kb-session"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "kb-geometry",
  "kb-pairing",
@@ -512,7 +512,7 @@ dependencies = [
 
 [[package]]
 name = "kb-transport"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "kb-geometry",
  "kb-pairing",
@@ -526,7 +526,7 @@ dependencies = [
 
 [[package]]
 name = "kb-win"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "kb-geometry",
  "kb-proto",

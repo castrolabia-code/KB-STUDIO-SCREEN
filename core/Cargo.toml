@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/kb-geometry", "crates/kb-proto", "crates/kb-pairing", "crates/kb-transport", "crates/kb-probe-win", "crates/kb-session", "crates/kb-win", "crates/kb-engine", "crates/kb-android"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.7.0"
 edition = "2021"
 license = "LicenseRef-CastroLabs-Proprietary"
 authors = ["Castro Labs"]

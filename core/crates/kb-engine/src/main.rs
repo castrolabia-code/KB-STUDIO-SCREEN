@@ -289,13 +289,14 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
         }
     });
     println!("Panel de control: {url}");
-    if std::env::var("KBSS_NO_BROWSER").is_err() {
+    if std::env::var("KBSS_NO_BROWSER").is_err() && !std::env::args().any(|a| a == "--sin-navegador") {
         // Abre el navegador predeterminado (la URL sólo tiene caracteres seguros).
         let _ = std::process::Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn();
     }
 
     // Consola: las respuestas a aprobaciones tienen prioridad sobre los comandos.
     let mut locked = false;
+    let mut exit_requested = false;
     let stdin = std::io::stdin();
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
@@ -376,9 +377,19 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
                 let n = host.prompter(action);
                 println!("  Teleprompter: {action:?} → {n} dispositivo(s){}", if cmd == "k" { if locked { " (bloqueado)" } else { " (desbloqueado)" } } else { "" });
             }
-            "x" => break,
+            "x" => {
+                exit_requested = true;
+                break;
+            }
             "" => {}
             _ => help(),
+        }
+    }
+    if !exit_requested {
+        // Sin consola interactiva (p. ej. inicio automático): el motor sigue
+        // funcionando; se controla desde el panel. Se cierra con el sistema.
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(3600));
         }
     }
     println!("Cerrando…");

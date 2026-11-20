@@ -52,6 +52,37 @@ jobs:
         working-directory: core
         run: |
           ./target/release/kb-probe-win.exe --no-pause
+      - name: Installer full cycle (install, run, uninstall) on real Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = "C:\Program Files\Castro Labs\KB Studio Screen"
+          Start-Process descargas\KBStudioScreen-Setup.exe -ArgumentList '/S' -Wait
+          foreach ($f in 'kbss-engine.exe','kb-probe-win.exe','Manual de uso.txt','LICENCIAS.txt','Desinstalar.exe') {
+            if (-not (Test-Path "$dir\$f")) { throw "falta $f" }
+          }
+          if (-not (Test-Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\KB Studio Screen\KB Studio Screen.lnk")) { throw "falta acceso en menú Inicio" }
+          $rule = netsh advfirewall firewall show rule name="KB Studio Screen" verbose | Out-String
+          Write-Host $rule
+          if ($rule -notmatch '47800' -or $rule -match 'Public') { throw "regla de firewall incorrecta" }
+          $reg = Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\KBStudioScreen'
+          Write-Host "Registrado: $($reg.DisplayName) $($reg.DisplayVersion) de $($reg.Publisher)"
+          # Motor instalado: escucha QUIC y el panel rechaza accesos sin token.
+          $env:KBSS_NO_BROWSER = '1'
+          $p = Start-Process "$dir\kbss-engine.exe" -ArgumentList '--sin-navegador' -PassThru
+          Start-Sleep -Seconds 6
+          if (-not (Get-NetUDPEndpoint -LocalPort 47800 -ErrorAction SilentlyContinue)) { throw "el motor no escucha en UDP 47800" }
+          try { Invoke-WebRequest http://127.0.0.1:47801/ -UseBasicParsing | Out-Null; throw "el panel respondió sin token" }
+          catch { if ($_.Exception.Response.StatusCode.value__ -ne 403) { throw "esperaba 403: $_" } }
+          Write-Host "Motor instalado OK: UDP 47800 abierto; panel 127.0.0.1:47801 rechaza sin token (403)."
+          Stop-Process -Id $p.Id -Force
+          Start-Process "$dir\Desinstalar.exe" -ArgumentList '/S', "_?=$dir" -Wait
+          Remove-Item "$dir\Desinstalar.exe" -ErrorAction SilentlyContinue
+          if (Test-Path "$dir\kbss-engine.exe") { throw "la desinstalación dejó archivos" }
+          $rule2 = netsh advfirewall firewall show rule name="KB Studio Screen" | Out-String
+          if ($rule2 -match '47800') { throw "la desinstalación dejó la regla de firewall" }
+          if (Test-Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\KBStudioScreen') { throw "quedó la entrada de desinstalación" }
+          Write-Host "INSTALADOR OK: instalación, ejecución y desinstalación limpias."
       - uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
