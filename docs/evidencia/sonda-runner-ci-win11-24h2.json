@@ -1,0 +1,122 @@
+
+{
+  "adapters": [
+    {
+      "dedicated_vram_mb": 0,
+      "device_id": "0x008C",
+      "name": "Microsoft Basic Render Driver",
+      "outputs": [
+        {
+          "attached": true,
+          "desktop_duplication": {
+            "detail": "DuplicateOutput OK (sesión cerrada de inmediato)",
+            "ok": true
+          },
+          "device_name": "\\\\.\\DISPLAY1",
+          "effective_dpi": 96,
+          "height": 768,
+          "rotation_dxgi": 1,
+          "scale_percent": 100,
+          "width": 1024,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "software": false,
+      "vendor": "Microsoft (software/virtual)",
+      "vendor_id": "0x1414"
+    },
+    {
+      "dedicated_vram_mb": 0,
+      "device_id": "0x008C",
+      "name": "Microsoft Basic Render Driver",
+      "outputs": [],
+      "software": true,
+      "vendor": "Microsoft (software/virtual)",
+      "vendor_id": "0x1414"
+    }
+  ],
+  "capture": {
+    "wgc_border_optional": true,
+    "wgc_cursor_toggle": true,
+    "wgc_min_update_interval": true,
+    "wgc_supported": true
+  },
+  "dev_tools": {
+    "adb": false,
+    "android_sdk": true,
+    "android_studio": false,
+    "cargo": true,
+    "git": true,
+    "java": true,
+    "rustc": true,
+    "visual_studio": "18.12.0",
+    "wdk_versions": [],
+    "windows_sdk_versions": [
+      "10.0.26100.0"
+    ]
+  },
+  "h264_encoders": [
+    {
+      "hw_url": null,
+      "kind": "software",
+      "name": "H264 Encoder MFT"
+    }
+  ],
+  "indirect_display": {
+    "display_class_drivers": [
+      {
+        "desc": "Microsoft Hyper-V Video",
+        "provider": "Microsoft",
+        "version": "10.0.26100.1150"
+      }
+    ],
+    "framework_files": [
+      {
+        "file": "IddCx.dll",
+        "version": "6.2.26100.33648"
+      },
+      {
+        "file": "IndirectKmd.sys",
+        "version": "6.2.26100.33648"
+      }
+    ]
+  },
+  "network": {
+    "connected_networks": [
+      {
+        "category": "Pública"
+      }
+    ],
+    "note": "Con perfil 'Pública', Windows Firewall bloquea por defecto conexiones entrantes: el instalador deberá crear una regla acotada al ejecutable y a redes privadas."
+  },
+  "os": {
+    "arch": "x86_64",
+    "build": 26100,
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "display_version": "24H2",
+    "edition": "ServerDatacenter",
+    "family": "Windows 11",
+    "logical_cpus": 4,
+    "ram_gb": 16.0,
+    "secure_boot_enabled": false,
+    "ubr": 33828
+  },
+  "relevant_apps": [],
+  "tool": "kb-probe-win",
+  "touch_injection": {
+    "digitizer_flags": 0,
+    "initialize_touch_injection": {
+      "detail": "OK (10 contactos)",
+      "ok": true
+    },
+    "note": "UIPI: un proceso sin elevar NO puede inyectar en ventanas elevadas. Verificar que Reason no corra como administrador.",
+    "synthetic_pointer_touch": {
+      "detail": "CreateSyntheticPointerDevice(PT_TOUCH, 10) OK",
+      "ok": true
+    },
+    "system_max_touches": 0
+  },
+  "version": "0.1.0"
+}
+

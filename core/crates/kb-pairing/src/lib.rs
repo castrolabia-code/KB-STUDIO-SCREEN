@@ -353,6 +353,16 @@ impl TrustStore {
     pub fn revoke(&mut self, fp: &Fingerprint) -> bool {
         self.devices.remove(&Self::key(fp)).is_some()
     }
+    /// Recorre (huella en base64url, dispositivo).
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &TrustedDevice)> {
+        self.devices.iter()
+    }
+    pub fn fingerprint_from_key(key: &str) -> Option<Fingerprint> {
+        B64.decode(key).ok()?.try_into().ok().map(Fingerprint)
+    }
+    pub fn key_of(fp: &Fingerprint) -> String {
+        Self::key(fp)
+    }
     pub fn len(&self) -> usize {
         self.devices.len()
     }

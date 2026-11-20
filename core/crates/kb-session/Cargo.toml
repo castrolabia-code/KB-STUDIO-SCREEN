@@ -1,0 +1,17 @@
+[package]
+name = "kb-session"
+description = "Lógica de sesión KB STUDIO SCREEN (host y cliente), independiente de la plataforma: emparejamiento, ranuras, video, entrada."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+kb-geometry = { path = "../kb-geometry" }
+kb-proto = { path = "../kb-proto" }
+kb-pairing = { path = "../kb-pairing" }
+kb-transport = { path = "../kb-transport" }
+tokio = { workspace = true, features = ["io-util"] }
+thiserror = { workspace = true }
+rand = { workspace = true }
+quinn = { workspace = true }

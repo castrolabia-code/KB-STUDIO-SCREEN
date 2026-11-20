@@ -36,10 +36,15 @@ jobs:
           workspaces: core
       - name: Tests (MSVC)
         working-directory: core
-        run: cargo test --all-targets
+        run: cargo test --all-targets -- --test-threads=1
       - name: Clippy (MSVC)
         working-directory: core
         run: cargo clippy --all-targets -- -D warnings
+      - name: Real Windows capture + encode + input test (release, with H.264 dump)
+        working-directory: core
+        env:
+          KBSS_DUMP_H264: "1"
+        run: cargo test --release -p kb-win --test windows_real -- --nocapture --test-threads=1
       - name: Build release binaries
         working-directory: core
         run: cargo build --release --bins

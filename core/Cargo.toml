@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/kb-geometry", "crates/kb-proto", "crates/kb-pairing", "crates/kb-transport", "crates/kb-probe-win"]
+members = ["crates/kb-geometry", "crates/kb-proto", "crates/kb-pairing", "crates/kb-transport", "crates/kb-probe-win", "crates/kb-session", "crates/kb-win", "crates/kb-engine"]
 
 [workspace.package]
 version = "0.1.0"

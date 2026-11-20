@@ -183,6 +183,9 @@ pub enum Message {
         host_name: String,
     },
     // --- emparejamiento por PIN (SPAKE2, ver kb-pairing) ---
+    /// Cliente -> host: "mostrá un PIN en la PC". El host lo muestra y responde `PairPinReady`.
+    PairPinRequest,
+    PairPinReady { ttl_s: u16 },
     PairStart { spake_msg: Vec<u8> },
     PairReply { spake_msg: Vec<u8> },
     PairConfirm { mac: [u8; 32] },

@@ -293,6 +293,7 @@ pub fn authorize_inbound(msg: &Message, trust: &kb_pairing::TrustStore, peer: &F
     let pairing_msg = matches!(
         msg,
         Message::ClientHello { .. }
+            | Message::PairPinRequest
             | Message::PairStart { .. }
             | Message::PairConfirm { .. }
             | Message::PairQrToken { .. }
