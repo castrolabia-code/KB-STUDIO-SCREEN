@@ -118,8 +118,8 @@ fn view_only_and_unpaired_devices_cannot_inject_input() {
     let controller = kb_pairing::Fingerprint([2; 32]);
     let stranger = kb_pairing::Fingerprint([3; 32]);
     let mut ts = TrustStore::default();
-    ts.add(viewer, TrustedDevice { name: "Cantante".into(), permission: Permission::ViewOnly, paired_at_ms: 0, last_seen_ms: 0 });
-    ts.add(controller, TrustedDevice { name: "Mixer".into(), permission: Permission::Control, paired_at_ms: 0, last_seen_ms: 0 });
+    ts.add(viewer, TrustedDevice { name: "Cantante".into(), permission: Permission::ViewOnly, paired_at_ms: 0, last_seen_ms: 0, last_monitor: None, profile: None });
+    ts.add(controller, TrustedDevice { name: "Mixer".into(), permission: Permission::Control, paired_at_ms: 0, last_seen_ms: 0, last_monitor: None, profile: None });
     let touch = Message::Input(InputEvent::Pointer(PointerEvent {
         pointer_id: 0,
         phase: PointerPhase::Down,

@@ -15,7 +15,7 @@ use kb_geometry::{NormPoint, Rect, Rotation};
 use serde::{Deserialize, Serialize};
 
 pub const PROTO_MAJOR: u16 = 1;
-pub const PROTO_MINOR: u16 = 0;
+pub const PROTO_MINOR: u16 = 1;
 pub const ALPN: &[u8] = b"kbss/1";
 
 /// Tamaño máximo de un mensaje de control serializado.
@@ -223,6 +223,9 @@ pub enum Message {
     Stats(ClientStats),
     Error { code: ErrorCode },
     Bye,
+    /// Cliente -> host: cambiar el perfil de calidad (Mezcla / Letras / Automático).
+    /// Agregado al final del enum: compatible con clientes 1.0 que no lo envían.
+    SetProfile { profile: QualityProfile },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

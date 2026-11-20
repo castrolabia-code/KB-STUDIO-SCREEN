@@ -25,7 +25,7 @@
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD as B64, Engine};
 use hmac::{Hmac, Mac};
-use kb_proto::Permission;
+use kb_proto::{Permission, QualityProfile};
 use rand::{rngs::OsRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -323,6 +323,11 @@ pub struct TrustedDevice {
     pub permission: Permission,
     pub paired_at_ms: u64,
     pub last_seen_ms: u64,
+    /// Preferencias recordadas para la próxima conexión.
+    #[serde(default)]
+    pub last_monitor: Option<String>,
+    #[serde(default)]
+    pub profile: Option<QualityProfile>,
 }
 
 /// Lista de dispositivos confiables del host. La persistencia en disco debe
@@ -349,6 +354,10 @@ impl TrustStore {
     }
     pub fn set_permission(&mut self, fp: &Fingerprint, p: Permission) -> bool {
         self.devices.get_mut(&Self::key(fp)).map(|d| d.permission = p).is_some()
+    }
+    /// Actualiza las preferencias recordadas del dispositivo.
+    pub fn update(&mut self, fp: &Fingerprint, f: impl FnOnce(&mut TrustedDevice)) -> bool {
+        self.devices.get_mut(&Self::key(fp)).map(f).is_some()
     }
     pub fn revoke(&mut self, fp: &Fingerprint) -> bool {
         self.devices.remove(&Self::key(fp)).is_some()
@@ -543,7 +552,7 @@ mod tests {
     #[test]
     fn trust_store_permissions_and_revocation() {
         let mut ts = TrustStore::default();
-        ts.add(CFP, TrustedDevice { name: "Tablet".into(), permission: Permission::ViewOnly, paired_at_ms: 0, last_seen_ms: 0 });
+        ts.add(CFP, TrustedDevice { name: "Tablet".into(), permission: Permission::ViewOnly, paired_at_ms: 0, last_seen_ms: 0, last_monitor: None, profile: None });
         assert!(!ts.may_control(&CFP));
         assert!(ts.set_permission(&CFP, Permission::Control));
         assert!(ts.may_control(&CFP));

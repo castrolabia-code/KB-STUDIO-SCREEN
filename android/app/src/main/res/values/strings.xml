@@ -46,4 +46,8 @@
     <string name="err_no_virtual">La PC no tiene instalado el driver de pantallas virtuales. Usá Duplicar o instalalo en la PC.</string>
     <string name="err_mode_permission">Sólo un dispositivo con control puede cambiar el origen.</string>
     <string name="err_mode_rejected">La PC no aprobó el cambio.</string>
+    <string name="quality">Calidad</string>
+    <string name="quality_mixer">Mezcla · respuesta rápida (30 fps)</string>
+    <string name="quality_lyrics">Letras · máxima nitidez (10 fps)</string>
+    <string name="quality_auto">Automático</string>
 </resources>

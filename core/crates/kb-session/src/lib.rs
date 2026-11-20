@@ -7,6 +7,7 @@
 
 pub mod client;
 pub mod convert;
+pub mod cursor;
 pub mod host;
 
 use kb_geometry::{PointI, Topology};

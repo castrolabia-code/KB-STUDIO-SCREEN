@@ -234,6 +234,19 @@ pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_selectMonit
     }
 }
 
+/// Perfil de calidad: 0 = Mezcla (latencia), 1 = Letras (nitidez), 2 = Automático.
+#[no_mangle]
+pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_setProfile(_env: JNIEnv, _c: JClass, h: jlong, p: jint) {
+    let profile = match p {
+        0 => kb_proto::QualityProfile::Mixer,
+        1 => kb_proto::QualityProfile::Lyrics,
+        _ => kb_proto::QualityProfile::Auto,
+    };
+    if let Some(s) = session(h) {
+        s.send(kb_proto::Message::SetProfile { profile });
+    }
+}
+
 /// Pide a la PC un monitor virtual (modo Extender). La PC confirma con el usuario.
 #[no_mangle]
 pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_extend(_env: JNIEnv, _c: JClass, h: jlong) {

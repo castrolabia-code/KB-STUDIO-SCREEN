@@ -28,8 +28,9 @@ Fecha: 2026-11-20 · Repositorio: `castrolabia-code/KB-STUDIO-SCREEN` · CI: Git
 | `kbss-engine.exe` (consola: QR, PIN, aprobación, lista, revocar, permisos, rescatar ventanas) | Compila (MSVC, CI) · **PENDIENTE** de uso real | |
 | App Android en emulador Android 10 (API 29): carga del núcleo por JNI, emparejamiento QR sobre QUIC, decodificación MediaCodec a Surface (≥ 30 frames recibidos, ≥ 10 decodificados), toques con letterbox y arrastre recibidos por el host, arranque de la pantalla principal | **PROBADO-CI (emulador)** | [evidencia/android-e2e-emulador-api29.txt](evidencia/android-e2e-emulador-api29.txt) |
 | API del cliente (la que usa JNI) contra el host de demostración | PROBADO-LOCAL | `client_smoke`: QR, 20 frames, toque en barra descartado, y=400 → y=360 correcto |
-| App en EXO 10" y S23 FE: descubrimiento mDNS, QR con cámara, PIN, visor, gestos, reconexión | **PENDIENTE** | Pruebas B2–B11 de la guía |
-| Fader de Reason 14 con arrastre continuo | **PENDIENTE** | Prueba B5 de la guía |
+| App en el teléfono (S23 FE): conexión, visor y control de Reason | **VALIDADO EN EQUIPO REAL** (usuario) | |
+| App en la tablet EXO 10"; PIN; solo lectura; reconexión; métricas de FPS/latencia | **PENDIENTE** | Pruebas B3–B11 de la guía |
+| Fader de Reason 14 con arrastre continuo | **VALIDADO EN EQUIPO REAL** (2026-11-20, usuario) | Teléfono Samsung → PC del estudio: pantalla visible y faders de Reason controlados "perfecto" |
 | Latencia y FPS sobre tu Wi-Fi, 720p/1080p, 15/30/60 FPS | **PENDIENTE** | Prueba B11 |
 | Cursor del mouse dibujado en la imagen | **NO IMPLEMENTADO** | Desktop Duplication no incluye el cursor; falta componerlo |
 | UI gráfica del host (Tauri) | **NO IMPLEMENTADO** | El MVP usa consola |

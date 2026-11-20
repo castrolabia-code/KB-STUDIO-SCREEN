@@ -4,11 +4,12 @@
 //!   (necesario en notebooks con GPU híbrida).
 //! * `DXGI_ERROR_ACCESS_LOST` (cambio de modo, UAC/escritorio seguro,
 //!   pantalla completa exclusiva) se informa como recuperable y el hub reabre.
-//! * El cursor NO viene en la imagen de Desktop Duplication: PENDIENTE
-//!   dibujarlo a partir de `GetFramePointerShape`.
+//! * El cursor NO viene en la imagen de Desktop Duplication: se compone
+//!   aparte con `GetFramePointerShape` + posición (ver kb_session::cursor).
 //! * MVP: copia a memoria de CPU (textura staging). La ruta 100 % GPU queda
 //!   como optimización.
 
+use kb_session::cursor::{composite, CursorKind, CursorShape};
 use kb_session::{mono_us, CaptureError, Capturer, Frame};
 use windows::core::Interface;
 use windows::Win32::Foundation::HMODULE;
@@ -22,6 +23,11 @@ pub struct DdaCapturer {
     ctx: ID3D11DeviceContext,
     dup: IDXGIOutputDuplication,
     staging: Option<(ID3D11Texture2D, u32, u32)>,
+    /// Última imagen del escritorio SIN cursor (para recomponer si sólo se mueve el mouse).
+    clean: Option<Frame>,
+    cursor: Option<CursorShape>,
+    cursor_pos: Option<(i32, i32)>,
+    pub draw_cursor: bool,
 }
 
 // Los objetos COM se usan sólo desde el hilo de captura que los posee.
@@ -79,7 +85,7 @@ impl DdaCapturer {
         let o1: IDXGIOutput1 = output.cast().map_err(fatal)?;
         // E_ACCESSDENIED aquí = escritorio seguro (UAC, bloqueo): recuperable.
         let dup = unsafe { o1.DuplicateOutput(&device) }.map_err(|e| CaptureError::AccessLost(e.to_string()))?;
-        Ok(Self { _device: device, ctx, dup, staging: None })
+        Ok(Self { _device: device, ctx, dup, staging: None, clean: None, cursor: None, cursor_pos: None, draw_cursor: true })
     }
 
     fn staging_for(&mut self, w: u32, h: u32, format: windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT) -> Result<ID3D11Texture2D, CaptureError> {
@@ -130,6 +136,41 @@ impl DdaCapturer {
     }
 }
 
+impl DdaCapturer {
+    fn read_pointer_shape(&mut self, size: u32) {
+        let mut buf = vec![0u8; size as usize];
+        let mut needed = 0u32;
+        let mut info = DXGI_OUTDUPL_POINTER_SHAPE_INFO::default();
+        if unsafe { self.dup.GetFramePointerShape(size, buf.as_mut_ptr() as _, &mut needed, &mut info) }.is_err() {
+            return;
+        }
+        let kind = match info.Type {
+            t if t == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME.0 as u32 => CursorKind::Monochrome,
+            t if t == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR.0 as u32 => CursorKind::MaskedColor,
+            _ => CursorKind::Color,
+        };
+        buf.truncate(needed as usize);
+        self.cursor = Some(CursorShape {
+            kind,
+            width: info.Width,
+            height: info.Height,
+            pitch: info.Pitch,
+            data: buf,
+            hotspot_x: info.HotSpot.x,
+            hotspot_y: info.HotSpot.y,
+        });
+    }
+
+    fn compose(&self) -> Option<Frame> {
+        let c = self.clean.as_ref()?;
+        let mut f = Frame { width: c.width, height: c.height, stride: c.stride, data: c.data.clone(), capture_us: mono_us() };
+        if let (true, Some(shape), Some((x, y))) = (self.draw_cursor, &self.cursor, self.cursor_pos) {
+            composite(&mut f.data, f.width, f.height, f.stride, shape, x, y);
+        }
+        Some(f)
+    }
+}
+
 impl Capturer for DdaCapturer {
     fn next_frame(&mut self, timeout_ms: u32) -> Result<Option<Frame>, CaptureError> {
         let mut info = DXGI_OUTDUPL_FRAME_INFO::default();
@@ -142,14 +183,37 @@ impl Capturer for DdaCapturer {
             }
             Err(e) => return Err(fatal(e)),
         }
-        // Sólo cambió el puntero: no hay imagen nueva.
-        let out = match (&res, info.LastPresentTime) {
-            (Some(r), t) if t != 0 => self.read(r).map(Some),
-            _ => Ok(None),
-        };
+        let mut changed = false;
+        let mut err = None;
+        if info.LastPresentTime != 0 {
+            if let Some(r) = &res {
+                match self.read(r) {
+                    Ok(f) => {
+                        self.clean = Some(f);
+                        changed = true;
+                    }
+                    Err(e) => err = Some(e),
+                }
+            }
+        }
+        if info.PointerShapeBufferSize > 0 {
+            self.read_pointer_shape(info.PointerShapeBufferSize);
+            changed = true;
+        }
+        if info.LastMouseUpdateTime != 0 {
+            let p = info.PointerPosition;
+            let new = p.Visible.as_bool().then_some((p.Position.x, p.Position.y));
+            if new != self.cursor_pos {
+                self.cursor_pos = new;
+                changed = true;
+            }
+        }
         unsafe {
             let _ = self.dup.ReleaseFrame();
         }
-        out
+        if let Some(e) = err {
+            return Err(e);
+        }
+        Ok(if changed { self.compose() } else { None })
     }
 }

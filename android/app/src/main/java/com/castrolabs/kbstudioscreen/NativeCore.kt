@@ -44,6 +44,8 @@ object NativeCore {
     @JvmStatic external fun wheel(h: Long, x: Float, y: Float, dy: Int)
     @JvmStatic external fun requestKeyframe(h: Long)
     @JvmStatic external fun selectMonitor(h: Long, id: String)
+    /** 0 = Mezcla (baja latencia), 1 = Letras (máxima nitidez), 2 = Automático. */
+    @JvmStatic external fun setProfile(h: Long, profile: Int)
     /** Pide extender el escritorio con un monitor virtual (la PC confirma). */
     @JvmStatic external fun extend(h: Long)
     @JvmStatic external fun monitors(h: Long): String

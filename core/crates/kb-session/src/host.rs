@@ -376,7 +376,7 @@ async fn pair(
     }
     send(tx, Message::PairResult { approved: true, permission }).await?;
     let mut t = inner.trust.lock().unwrap();
-    t.add(peer, TrustedDevice { name: name.to_string(), permission, paired_at_ms: now_ms(), last_seen_ms: now_ms() });
+    t.add(peer, TrustedDevice { name: name.to_string(), permission, paired_at_ms: now_ms(), last_seen_ms: now_ms(), last_monitor: None, profile: None });
     inner.persist.save(&t);
     Ok(permission)
 }
@@ -511,6 +511,13 @@ async fn run_session(
         send(&mut tx, Message::Error { code: ErrorCode::Internal }).await?;
         return Err(SessionError::Rejected("no hay monitores"));
     };
+    // Preferencias recordadas del dispositivo (último monitor y perfil).
+    let prefs = inner.trust.lock().unwrap().get(&peer).cloned();
+    if let Some(m) = prefs.as_ref().and_then(|d| d.last_monitor.as_ref()).and_then(|id| topo.by_id(id)) {
+        if !m.is_virtual {
+            monitor = m.clone();
+        }
+    }
     // Reconexión tras un corte: si este dispositivo tenía un monitor virtual, se retoma.
     let mut mode = Mode::Mirror { monitor_id: monitor.id.clone() };
     {
@@ -526,7 +533,7 @@ async fn run_session(
     let permission = inner.trust.lock().unwrap().get(&peer).map(|d| d.permission).unwrap_or(Permission::ViewOnly);
     inner.ui.event(HostEvent::Connected { slot, name: name.clone(), permission });
 
-    let profile = default_profile(permission);
+    let profile = prefs.and_then(|d| d.profile).unwrap_or_else(|| default_profile(permission));
     let mut params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, profile);
     let mut video = start_video(inner, &conn, &monitor, params.clone(), slot);
     let ticket = inner.tickets.issue(&peer, slot, now_ms());
@@ -591,6 +598,7 @@ async fn run_session(
                         Some(m) => {
                             // Volver a duplicar: el monitor virtual propio se retira.
                             release_virtual(inner, &peer);
+                            remember(inner, &peer, |d| d.last_monitor = Some(monitor_id.clone()));
                             monitor = m;
                             mode = Mode::Mirror { monitor_id };
                         }
@@ -647,6 +655,26 @@ async fn run_session(
                     .await?;
                 }
             }
+            Message::SetProfile { profile } => {
+                // Cualquier dispositivo emparejado (también el cantante) elige su calidad.
+                remember(inner, &peer, |d| d.profile = Some(profile));
+                params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, profile);
+                drop(video);
+                video = start_video(inner, &conn, &monitor, params.clone(), slot);
+                let perm = inner.trust.lock().unwrap().get(&peer).map(|d| d.permission).unwrap_or(Permission::ViewOnly);
+                send(
+                    &mut tx,
+                    Message::SessionConfig {
+                        slot,
+                        mode: mode.clone(),
+                        permission: perm,
+                        params: params.clone(),
+                        present_rotation: Rotation::R0,
+                        resume_ticket: ticket.clone(),
+                    },
+                )
+                .await?;
+            }
             Message::Ping { t_us } => send(&mut tx, Message::Pong { t_us }).await?,
             Message::Bye => break Ok(()),
             _ => {}
@@ -670,6 +698,14 @@ async fn run_session(
         });
     }
     result
+}
+
+/// Guarda una preferencia del dispositivo y persiste la lista de confianza.
+fn remember(inner: &Arc<Inner>, peer: &Fingerprint, f: impl FnOnce(&mut TrustedDevice)) {
+    let mut t = inner.trust.lock().unwrap();
+    if t.update(peer, f) {
+        inner.persist.save(&t);
+    }
 }
 
 /// Quita el monitor virtual de un dispositivo (si tiene) en un hilo aparte.

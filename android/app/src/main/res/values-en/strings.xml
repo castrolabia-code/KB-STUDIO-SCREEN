@@ -46,4 +46,8 @@
     <string name="err_no_virtual">The virtual display driver is not installed on the PC. Use Mirror or install it on the PC.</string>
     <string name="err_mode_permission">Only a device with control permission can change the source.</string>
     <string name="err_mode_rejected">The PC did not approve the change.</string>
+    <string name="quality">Quality</string>
+    <string name="quality_mixer">Mixing · fast response (30 fps)</string>
+    <string name="quality_lyrics">Lyrics · maximum sharpness (10 fps)</string>
+    <string name="quality_auto">Automatic</string>
 </resources>

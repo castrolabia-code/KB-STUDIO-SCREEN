@@ -378,3 +378,33 @@ async fn view_only_cannot_create_virtual_monitors() {
     assert!(!wait_mode(&c).await.0);
     assert!(r.virtuals.lock().unwrap().is_empty());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn profile_and_monitor_are_remembered_per_device() {
+    let r = rig(Some(Permission::Control));
+    let dev = Identity::generate().unwrap();
+    let (c, s) = pair_by_pin(&r, &dev, "S23 FE").await.unwrap();
+    assert_eq!(s.params.profile, QualityProfile::Mixer);
+    // Elegir "Letras" desde el teléfono: el host reconfigura el stream.
+    c.send(&Message::SetProfile { profile: QualityProfile::Lyrics }).await.unwrap();
+    loop {
+        if let Message::SessionConfig { params, .. } = c.recv_control().await.unwrap() {
+            assert_eq!(params.profile, QualityProfile::Lyrics);
+            assert_eq!(params.fps, 10);
+            break;
+        }
+    }
+    c.send(&Message::ModeChangeRequest { mode: Mode::Mirror { monitor_id: "LEFT".into() } }).await.unwrap();
+    assert!(wait_mode(&c).await.0);
+    c.close();
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    // Al volver: mismo monitor y mismo perfil, sin tocar nada.
+    let (_c2, stage) = Client::connect(r.addr, &dev, info("S23 FE"), Auth::Trusted(r.host_fp)).await.unwrap();
+    match stage {
+        Stage::Ready(s) => {
+            assert_eq!(s.mode, Mode::Mirror { monitor_id: "LEFT".into() });
+            assert_eq!(s.params.profile, QualityProfile::Lyrics);
+        }
+        _ => panic!(),
+    }
+}

@@ -74,6 +74,7 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
     private val toolbar = mutableStateOf(true)
     private val monitors = mutableStateOf<List<Pair<String, String>>>(emptyList())
     private val currentMonitor = mutableStateOf("")
+    private val profile = mutableStateOf("mixer")
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,6 +108,7 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
             val st = JSONObject(NativeCore.stage(handle))
             permission.value = st.optString("permission", "view")
             currentMonitor.value = st.optString("monitor", "")
+            profile.value = st.optString("profile", "mixer")
         }
         refreshMonitors()
     }
@@ -146,6 +148,7 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
                     "session" -> runOnUiThread {
                         permission.value = ev.optString("permission", "view")
                         currentMonitor.value = ev.optString("monitor", "")
+                        profile.value = ev.optString("profile", profile.value)
                     }
                     "monitors" -> runOnUiThread { refreshMonitors() }
                     "mode_result" -> if (!ev.optBoolean("accepted")) runOnUiThread {
@@ -337,6 +340,7 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
                                 stringResource(if (locked.value) R.string.touch_locked else R.string.touch_unlocked),
                                 tint = if (locked.value) Orange else TextHi) { locked.value = !locked.value }
                         }
+                        QualityMenu()
                         ToolButton(Icons.Filled.ZoomOutMap, stringResource(R.string.reset_zoom)) { zoom = 1f; offX = 0f; offY = 0f; applyTransform() }
                         ToolButton(Icons.Filled.Refresh, stringResource(R.string.refresh_image)) { if (handle != 0L) NativeCore.requestKeyframe(handle) }
                         Text("${frameW}×${frameH} · ${fps.intValue} fps", color = Metal, fontSize = 13.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(horizontal = 10.dp))
@@ -346,6 +350,25 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
                 // Manija discreta para volver a mostrar la barra.
                 Box(Modifier.size(width = 72.dp, height = 22.dp).clickable { toolbar.value = true }, contentAlignment = Alignment.Center) {
                     Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.22f)) { Spacer(Modifier.size(width = 44.dp, height = 5.dp)) }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun QualityMenu() {
+        var open by remember { mutableStateOf(false) }
+        Box {
+            ToolButton(Icons.Filled.Tune, stringResource(R.string.quality)) { open = true }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                listOf(
+                    Triple(0, "mixer", R.string.quality_mixer),
+                    Triple(1, "lyrics", R.string.quality_lyrics),
+                    Triple(2, "auto", R.string.quality_auto),
+                ).forEach { (code, key, label) ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(label) + if (profile.value == key) "  ✓" else "") },
+                        onClick = { open = false; if (handle != 0L) NativeCore.setProfile(handle, code) })
                 }
             }
         }
