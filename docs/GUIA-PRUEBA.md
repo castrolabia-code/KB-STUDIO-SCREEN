@@ -89,6 +89,14 @@ Para desinstalar: `kbss-engine.exe driver remove-adapter` y `pnputil /delete-dri
 
 Si no hay ningún dispositivo en "solo ver", la letra se envía a todos los conectados.
 
+## E. Control desde la PC y perfiles (0.4.0)
+
+- [ ] **E1.** Con el teléfono conectado, en el panel elegí otro **Monitor de origen** en su tarjeta → el teléfono cambia de monitor al instante.
+- [ ] **E2.** Cambiá la **Calidad** a "Letras · nítida" y después a "Mezcla · rápida" → el teléfono se reconfigura.
+- [ ] **E3.** Dejá todo como lo usás para grabar voz (teléfono con control en el monitor del mixer, tablet en solo ver) → **Perfiles de estudio → Grabación vocal → Guardar actual**.
+- [ ] **E4.** Cambiá cosas a mano y después tocá **Aplicar** en "Grabación vocal" → todo vuelve a como lo guardaste.
+- [ ] **E5.** Cerrá y volvé a abrir `kbss-engine.exe`: los perfiles siguen ahí.
+
 ## Qué me tenés que mandar
 
 1. `kbss-probe-report.json`.

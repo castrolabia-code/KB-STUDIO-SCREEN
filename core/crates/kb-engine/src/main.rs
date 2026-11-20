@@ -97,6 +97,7 @@ impl TrustPersistence for FilePersist {
 
 // ------------------------------------------------------------ consola
 
+mod profiles;
 mod ui;
 mod web;
 use ui::{perm_es, Ui};
@@ -276,6 +277,8 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
         token: web::new_token(),
         port: port + 1,
         locked: std::sync::atomic::AtomicBool::new(false),
+        profiles: std::sync::Mutex::new(profiles::Profiles::load(&Store::open().dir.join("profiles.json"))),
+        profiles_path: Store::open().dir.join("profiles.json"),
     });
     let url = panel.url();
     let p2 = panel.clone();

@@ -37,6 +37,7 @@
   button:hover { border-color: var(--muted); }
   button.primary { background: var(--orange); color: #1a0e05; border-color: var(--orange); font-weight: 600; }
   button.danger { color: var(--bad); }
+  button:disabled { opacity: .35; cursor: not-allowed; filter: grayscale(1); }
   button:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
   .list { display: flex; flex-direction: column; gap: 8px; }
   .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--panel2); border-radius: 10px; }
@@ -45,6 +46,13 @@
   #qr { background: #fff; border-radius: 12px; padding: 10px; width: 280px; max-width: 100%; display: none; }
   .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
   .drop.over { border-color: var(--orange); color: var(--text); }
+  select { font: inherit; font-size: 14px; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 10px; max-width: 100%; }
+  .slot label { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .slot label select { display: block; width: 100%; margin-top: 4px; }
+  .profiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .profile { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .profile .pname { font-weight: 600; font-size: 16px; }
+  .profile ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
   #log { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); max-height: 200px; overflow: auto; white-space: pre-wrap; }
   .status { font-size: 13px; margin-top: 8px; min-height: 18px; }
   @media (prefers-reduced-motion: no-preference) { button { transition: border-color .15s; } }
@@ -64,6 +72,12 @@
   <section class="wide">
     <h2>Pantallas Android (hasta 3)</h2>
     <div class="slots" id="slots"></div>
+  </section>
+
+  <section class="wide">
+    <h2>Perfiles de estudio</h2>
+    <p class="muted">Configurá los dispositivos como los querés (monitor, calidad, permiso) y tocá <b>Guardar</b>. Otro día, <b>Aplicar</b> los deja igual con un clic (también a los que se conecten después).</p>
+    <div class="profiles" id="profiles"></div>
   </section>
 
   <section>
@@ -111,6 +125,7 @@
 "use strict";
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 let speed = 0;
+const QUALITY = { mixer: "Mezcla · rápida", lyrics: "Letras · nítida", auto: "Automática" };
 
 async function api(path, body, raw) {
   const opt = { method: body === undefined ? "GET" : "POST", headers: { "X-KBSS-Token": TOKEN } };
@@ -155,13 +170,36 @@ function render(s) {
   document.getElementById("alerts-sec").hidden = alerts.length === 0;
   fill("alerts", alerts);
 
-  fill("slots", s.slots.map((sl, i) => sl
-    ? el("div", { class: "slot" },
-        el("div", { class: "name" }, sl.name || `Ranura ${i + 1}`),
-        el("span", { class: "tag " + (sl.permission === "control táctil" ? "ctl" : "view") }, sl.permission || "conectando"),
-        el("div", { class: "meta" }, sl.width ? `${sl.monitor} · ${sl.width}×${sl.height} · ${sl.fps} fps` : "Iniciando video…",
-          el("br"), sl.encoder || ""))
-    : el("div", { class: "slot empty" }, `Ranura ${i + 1} libre`)));
+  // No redibujar las ranuras mientras el usuario está eligiendo en un selector.
+  const editing = document.activeElement && document.activeElement.tagName === "SELECT" && document.getElementById("slots").contains(document.activeElement);
+  if (!editing) fill("slots", s.slots.map((sl, i) => {
+    if (!sl) return el("div", { class: "slot empty" }, `Ranura ${i + 1} libre`);
+    const dev = s.devices.find(d => d.key === sl.key) || {};
+    const monName = (s.monitors.find(m => m.id === sl.monitor) || {}).name || sl.monitor;
+    const monSel = el("select", { "aria-label": "Monitor de origen" },
+      ...s.monitors.filter(m => !m.virtual || m.id === sl.monitor).map(m => {
+        const o = el("option", { value: m.id }, `${m.name} (${m.w}×${m.h})`); if (m.id === sl.monitor) o.selected = true; return o; }));
+    monSel.addEventListener("change", () => slotSet(sl.key, { monitor_id: monSel.value }));
+    const qSel = el("select", { "aria-label": "Calidad" }, ...Object.entries(QUALITY).map(([k, v]) => {
+      const o = el("option", { value: k }, v); if ((dev.quality || "") === k) o.selected = true; return o; }));
+    if (!dev.quality) qSel.prepend(Object.assign(el("option", { value: "" }, "Según permiso"), { selected: true }));
+    qSel.addEventListener("change", () => qSel.value && slotSet(sl.key, { quality: qSel.value }));
+    return el("div", { class: "slot" },
+      el("div", { class: "name" }, sl.name || `Ranura ${i + 1}`),
+      el("span", { class: "tag " + (sl.permission === "control táctil" ? "ctl" : "view") }, sl.permission || "conectando"),
+      el("div", { class: "meta" }, sl.width ? `${monName} · ${sl.width}×${sl.height} · ${sl.fps} fps` : "Iniciando video…", el("br"), sl.encoder || ""),
+      el("label", {}, "Monitor de origen", monSel),
+      el("label", {}, "Calidad", qSel));
+  }));
+
+  fill("profiles", s.profiles.map(p => el("div", { class: "profile" },
+    el("div", { class: "pname" }, p.name),
+    p.devices.length
+      ? el("ul", {}, ...p.devices.map(d => el("li", {}, `${d.name}: ${d.monitor || "monitor principal"} · ${QUALITY[d.quality] || "calidad según permiso"} · ${d.permission}`)))
+      : el("div", { class: "muted" }, "Vacío"),
+    el("div", { class: "row" },
+      Object.assign(el("button", { class: "primary", onclick: () => profile(p.name, "apply") }, "Aplicar"), { disabled: !p.devices.length }),
+      el("button", { onclick: () => { if (!p.devices.length || confirm(`¿Reemplazar «${p.name}» con la configuración actual?`)) profile(p.name, "save"); } }, "Guardar actual")))));
 
   fill("devices", s.devices.length ? s.devices.map(d => el("div", { class: "item" },
     el("div", { class: "grow" }, el("div", {}, d.name), el("div", { class: "muted" }, d.permission)),
@@ -183,6 +221,12 @@ async function refresh() {
   catch { document.getElementById("hostinfo").textContent = "Sin conexión con kbss-engine. ¿Se cerró la ventana del motor?"; }
 }
 async function answer(id, a) { await api("/api/answer", { id, answer: a }); refresh(); }
+async function slotSet(key, change) { await api("/api/slot", Object.assign({ key }, change)); refresh(); }
+async function profile(name, action) {
+  const r = await api("/api/profile", { name, action });
+  document.getElementById("hostinfo").textContent = r.ok ? (action === "save" ? `Perfil «${name}» guardado (${r.devices} dispositivo/s).` : `Perfil «${name}» aplicado a ${r.devices} dispositivo/s.`) : (r.error || "Error");
+  setTimeout(refresh, 1500);
+}
 async function device(key, action) { await api("/api/device", { key, action }); refresh(); }
 async function prompter(action, value) {
   const r = await api("/api/prompter", { action, value });

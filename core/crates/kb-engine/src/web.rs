@@ -5,10 +5,11 @@
 //!   agregarlo sin un preflight CORS que nunca se aprueba) y `Origin` propio.
 //! * Límites de tamaño en todos los cuerpos.
 
+use crate::profiles::{Profiles, NAMES};
 use crate::ui::{perm_es, Ui};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD as B64, Engine};
 use kb_pairing::TrustStore;
-use kb_proto::{DocKind, Permission, PrompterAction};
+use kb_proto::{DocKind, Permission, PrompterAction, QualityProfile};
 use kb_session::host::Host;
 use serde_json::{json, Value};
 use std::io::Read;
@@ -31,6 +32,8 @@ pub struct Panel {
     pub token: String,
     pub port: u16,
     pub locked: AtomicBool,
+    pub profiles: std::sync::Mutex<Profiles>,
+    pub profiles_path: std::path::PathBuf,
 }
 
 pub fn new_token() -> String {
@@ -158,6 +161,41 @@ impl Panel {
                     None => json_resp(json!({"error": "acción desconocida"}), 400),
                 }
             }
+            (Method::Post, "/api/slot") => {
+                // Cambio en vivo de un dispositivo desde el panel.
+                let v: Value = serde_json::from_slice(&body).unwrap_or_default();
+                let fp = v["key"].as_str().and_then(TrustStore::fingerprint_from_key);
+                let mon = v["monitor_id"].as_str().map(str::to_string);
+                let q = v["quality"].as_str().and_then(quality_from);
+                match fp {
+                    Some(fp) => json_resp(json!({"ok": self.host.apply_device(&fp, mon, q, None)}), 200),
+                    None => json_resp(json!({"error": "dispositivo inválido"}), 400),
+                }
+            }
+            (Method::Post, "/api/profile") => {
+                let v: Value = serde_json::from_slice(&body).unwrap_or_default();
+                let name = v["name"].as_str().unwrap_or("");
+                if !NAMES.contains(&name) {
+                    json_resp(json!({"error": "perfil desconocido"}), 400)
+                } else {
+                    let topo = self.platform.topology();
+                    let mut p = self.profiles.lock().unwrap();
+                    match v["action"].as_str() {
+                        Some("save") => {
+                            let n = p.snapshot(name, &self.host, &topo);
+                            p.save(&self.profiles_path);
+                            self.ui.note(format!("  Perfil «{name}» guardado ({n} dispositivo/s)."));
+                            json_resp(json!({"ok": true, "devices": n}), 200)
+                        }
+                        Some("apply") => {
+                            let n = p.apply(name, &self.host, &topo);
+                            self.ui.note(format!("  Perfil «{name}» aplicado a {n} dispositivo/s."));
+                            json_resp(json!({"ok": true, "devices": n}), 200)
+                        }
+                        _ => json_resp(json!({"error": "acción desconocida"}), 400),
+                    }
+                }
+            }
             #[cfg(windows)]
             (Method::Post, "/api/rescue") => {
                 let n = kb_win::windows_rescue::rescue_offscreen_windows(&self.platform.topology());
@@ -174,14 +212,15 @@ impl Panel {
             .host
             .trusted()
             .into_iter()
-            .map(|(k, d)| json!({"key": k, "name": d.name, "permission": perm_es(d.permission), "control": d.permission == Permission::Control}))
+            .map(|(k, d)| json!({"key": k, "name": d.name, "permission": perm_es(d.permission), "control": d.permission == Permission::Control,
+                "quality": d.profile.map(quality_key), "monitor_id": d.last_monitor}))
             .collect();
         let monitors: Vec<Value> = self
             .platform
             .topology()
             .monitors
             .iter()
-            .map(|m| json!({"name": m.name, "w": m.bounds.w, "h": m.bounds.h, "x": m.bounds.x, "y": m.bounds.y, "primary": m.primary, "virtual": m.is_virtual}))
+            .map(|m| json!({"id": m.id, "name": m.name, "w": m.bounds.w, "h": m.bounds.h, "x": m.bounds.x, "y": m.bounds.y, "primary": m.primary, "virtual": m.is_virtual}))
             .collect();
         json!({
             "host": self.host_name, "fp": self.fp_short, "ip": self.lan_ip, "port": self.quic_port,
@@ -189,7 +228,27 @@ impl Panel {
             "pin": self.ui.pin_view().map(|(d, p)| json!({"device": d, "pin": p})),
             "devices": devices, "monitors": monitors, "locked": self.locked.load(Ordering::Relaxed),
             "log": self.ui.log_lines(),
+            "profiles": self.profiles_view(),
         })
+    }
+
+    fn profiles_view(&self) -> Vec<Value> {
+        let p = self.profiles.lock().unwrap();
+        NAMES
+            .iter()
+            .map(|n| {
+                let devs: Vec<Value> = p
+                    .items
+                    .get(*n)
+                    .map(|m| {
+                        m.values()
+                            .map(|d| json!({"name": d.name, "monitor": d.monitor_name, "quality": d.profile.map(quality_key), "permission": perm_es(d.permission)}))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                json!({"name": n, "devices": devs})
+            })
+            .collect()
     }
 
     fn qr(&self) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -217,6 +276,23 @@ impl Panel {
             }
             _ => json!({"error": "acción desconocida"}),
         }
+    }
+}
+
+fn quality_key(q: QualityProfile) -> &'static str {
+    match q {
+        QualityProfile::Mixer => "mixer",
+        QualityProfile::Lyrics => "lyrics",
+        QualityProfile::Auto => "auto",
+    }
+}
+
+fn quality_from(s: &str) -> Option<QualityProfile> {
+    match s {
+        "mixer" => Some(QualityProfile::Mixer),
+        "lyrics" => Some(QualityProfile::Lyrics),
+        "auto" => Some(QualityProfile::Auto),
+        _ => None,
     }
 }
 
@@ -315,6 +391,8 @@ mod http_tests {
             token: new_token(),
             port,
             locked: AtomicBool::new(false),
+            profiles: std::sync::Mutex::new(Profiles::default()),
+            profiles_path: std::env::temp_dir().join(format!("kbss_profiles_test_{port}.json")),
         });
         let p2 = p.clone();
         std::thread::spawn(move || p2.serve().unwrap());
@@ -366,9 +444,15 @@ mod http_tests {
         let p = start(47912);
         {
             let mut s = p.ui.slots.lock().unwrap();
-            s[0] = Some(crate::ui::SlotView { name: "Galaxy S23 FE".into(), permission: "control táctil".into(), monitor: "DELL U2719D".into(), width: 2340, height: 1080, fps: 30, encoder: "NVIDIA NVENC H.264 (hardware)".into() });
-            s[1] = Some(crate::ui::SlotView { name: "Tablet EXO".into(), permission: "solo ver".into(), monitor: "Monitor 2".into(), width: 1280, height: 800, fps: 10, encoder: "NVIDIA NVENC H.264 (hardware)".into() });
+            s[0] = Some(crate::ui::SlotView { key: String::new(), name: "Galaxy S23 FE".into(), permission: "control táctil".into(), monitor: "M".into(), width: 2340, height: 1080, fps: 30, encoder: "NVIDIA NVENC H.264 (hardware)".into() });
+            s[1] = Some(crate::ui::SlotView { key: String::new(), name: "Tablet EXO".into(), permission: "solo ver".into(), monitor: "M".into(), width: 1280, height: 800, fps: 10, encoder: "NVIDIA NVENC H.264 (hardware)".into() });
         }
+        p.profiles.lock().unwrap().items.insert(
+            "Grabación vocal".into(),
+            [("a".to_string(), crate::profiles::DeviceSetup { name: "Galaxy S23 FE".into(), monitor_id: Some("M".into()), monitor_name: Some("DELL U2719D".into()), profile: Some(kb_proto::QualityProfile::Mixer), permission: Permission::Control }),
+             ("b".to_string(), crate::profiles::DeviceSetup { name: "Tablet EXO".into(), monitor_id: None, monitor_name: None, profile: Some(kb_proto::QualityProfile::Lyrics), permission: Permission::ViewOnly })]
+            .into_iter().collect(),
+        );
         use kb_session::host::HostUi;
         p.ui.show_pin("Teléfono del bajista", "482913");
         let _rx = p.ui.approve(kb_session::host::ApprovalRequest { device_name: "Teléfono del bajista".into(), kind: kb_proto::DeviceKind::Phone, fingerprint_short: "3F-A1-09-C2".into(), method: "PIN" });

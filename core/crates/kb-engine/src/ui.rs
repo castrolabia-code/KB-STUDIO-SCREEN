@@ -17,6 +17,7 @@ pub enum Ask {
 
 #[derive(Serialize, Clone, Default)]
 pub struct SlotView {
+    pub key: String,
     pub name: String,
     pub permission: String,
     pub monitor: String,
@@ -70,7 +71,7 @@ impl Ui {
         }
     }
 
-    fn note(&self, msg: String) {
+    pub fn note(&self, msg: String) {
         println!("{msg}");
         let mut l = self.log.lock().unwrap();
         l.push_back(msg);
@@ -182,9 +183,9 @@ impl HostUi for Ui {
     }
     fn event(&self, ev: HostEvent) {
         match ev {
-            HostEvent::Connected { slot, name, permission } => {
+            HostEvent::Connected { slot, name, permission, device_key } => {
                 self.slots.lock().unwrap()[slot as usize] =
-                    Some(SlotView { name: name.clone(), permission: perm_es(permission).into(), ..Default::default() });
+                    Some(SlotView { key: device_key, name: name.clone(), permission: perm_es(permission).into(), ..Default::default() });
                 self.note(format!("● Ranura {}: «{name}» conectado ({})", slot + 1, perm_es(permission)));
             }
             HostEvent::Streaming { slot, monitor, width, height, fps, encoder } => {

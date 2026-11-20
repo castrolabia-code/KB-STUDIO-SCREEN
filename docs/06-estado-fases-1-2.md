@@ -65,6 +65,15 @@ El driver está firmado con un certificado de **prueba** y sólo se probó en un
 
 **Duplicar no necesita el driver**, así que podés probar toda la Fase 1 ya.
 
+## Fase 3 — Multipantalla y perfiles
+
+| Función | Estado | Evidencia |
+|---|---|---|
+| Hasta 3 dispositivos, cada uno con su monitor, calidad y permiso | PROBADO-LOCAL + CI (lógica) · teléfono + tablet **VALIDADOS por el usuario** (0.3.0) | e2e `three_slots…` |
+| Cambio en vivo desde la PC de monitor, calidad y permiso de un dispositivo conectado | PROBADO-LOCAL + CI | e2e `host_applies_monitor_quality_and_permission_live` |
+| Perfiles de estudio (Grabación vocal, Mezcla, Mastering, Personalizado): guardar y aplicar, tolerante a la renumeración de monitores de Windows | Implementado · PROBADO-LOCAL (resolución de monitores) · **PENDIENTE** en tu PC | `profiles::tests` |
+| Prueba con 3 dispositivos físicos simultáneos y mediciones de CPU/GPU/latencia | **PENDIENTE** | Sólo hay 2 dispositivos físicos |
+
 ## Fase 4 — Modo cantante (adelantado)
 
 | Función | Estado | Evidencia |

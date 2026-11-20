@@ -445,3 +445,27 @@ async fn singer_receives_document_and_prompter_but_producer_does_not() {
     assert!(!matches!(other, Ok(Ok(Message::DocChunk { .. }))));
     assert!(r.host.send_document("x", DocKind::Text, &[]).is_err());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn host_applies_monitor_quality_and_permission_live() {
+    let r = rig(Some(Permission::Control));
+    let dev = Identity::generate().unwrap();
+    let (c, s) = pair_by_pin(&r, &dev, "S23 FE").await.unwrap();
+    assert_eq!(s.mode, Mode::Mirror { monitor_id: "MAIN".into() });
+    let key = r.host.trusted()[0].0.clone();
+    let fp = TrustStore::fingerprint_from_key(&key).unwrap();
+    assert!(r.host.apply_device(&fp, Some("LEFT".into()), Some(QualityProfile::Lyrics), Some(Permission::ViewOnly)));
+    loop {
+        if let Message::SessionConfig { mode, params, permission, .. } = c.recv_control().await.unwrap() {
+            assert_eq!(mode, Mode::Mirror { monitor_id: "LEFT".into() });
+            assert_eq!(params.profile, QualityProfile::Lyrics);
+            assert_eq!(permission, Permission::ViewOnly);
+            break;
+        }
+    }
+    c.send(&touch(PointerPhase::Down, 1, 1)).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert!(r.injected.lock().unwrap().is_empty(), "ya en solo ver: no inyecta");
+    // Dispositivo desconocido: no hace nada.
+    assert!(!r.host.apply_device(&kb_pairing::Fingerprint([9; 32]), None, None, None));
+}

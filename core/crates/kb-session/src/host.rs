@@ -26,7 +26,8 @@ pub struct ApprovalRequest {
 
 #[derive(Debug, Clone)]
 pub enum HostEvent {
-    Connected { slot: u8, name: String, permission: Permission },
+    /// `device_key`: huella del dispositivo en base64url (para el panel y los perfiles).
+    Connected { slot: u8, name: String, permission: Permission, device_key: String },
     Streaming { slot: u8, monitor: String, width: u32, height: u32, fps: u16, encoder: String },
     Disconnected { slot: u8, name: String },
     Rejected { name: String, reason: String },
@@ -95,7 +96,15 @@ struct Inner {
     /// Monitores virtuales vivos por dispositivo: (ranura, monitor, generación de sesión).
     extended: Mutex<HashMap<Fingerprint, (u8, MonitorDesc, u64)>>,
     /// Cola de mensajes iniciados por el host (documentos, teleprompter) por sesión.
-    outboxes: Mutex<HashMap<Fingerprint, (u64, mpsc::UnboundedSender<Message>)>>,
+    outboxes: Mutex<HashMap<Fingerprint, (u64, mpsc::UnboundedSender<Outgoing>)>>,
+}
+
+/// Lo que el host le pide a una sesión activa por iniciativa propia.
+enum Outgoing {
+    /// Mensaje para el dispositivo (documento, teleprompter).
+    Msg(Message),
+    /// Cambiar monitor de origen y/o calidad (ya guardados en la lista de confianza).
+    Apply { monitor_id: Option<String>, profile: Option<QualityProfile> },
 }
 
 /// Tiempo que se conserva un monitor virtual tras una desconexión, esperando
@@ -174,7 +183,7 @@ impl Host {
 
     /// Destinatarios del modo cantante: sesiones en "solo ver"; si no hay
     /// ninguna, todas las sesiones conectadas.
-    fn singer_targets(&self) -> Vec<mpsc::UnboundedSender<Message>> {
+    fn singer_targets(&self) -> Vec<mpsc::UnboundedSender<Outgoing>> {
         let trust = self.inner.trust.lock().unwrap();
         let out = self.inner.outboxes.lock().unwrap();
         let viewers: Vec<_> = out
@@ -201,14 +210,14 @@ impl Host {
         let targets = self.singer_targets();
         for tx in &targets {
             for (i, chunk) in bytes.chunks(DOC_CHUNK).enumerate() {
-                let _ = tx.send(Message::DocChunk {
+                let _ = tx.send(Outgoing::Msg(Message::DocChunk {
                     doc_id,
                     name: name.clone(),
                     kind,
                     total: bytes.len() as u32,
                     offset: (i * DOC_CHUNK) as u32,
                     data: chunk.to_vec(),
-                });
+                }));
             }
         }
         Ok(targets.len())
@@ -218,9 +227,37 @@ impl Host {
     pub fn prompter(&self, action: PrompterAction) -> usize {
         let targets = self.singer_targets();
         for tx in &targets {
-            let _ = tx.send(Message::Prompter { action });
+            let _ = tx.send(Outgoing::Msg(Message::Prompter { action }));
         }
         targets.len()
+    }
+
+    /// Cambia desde la PC la configuración de un dispositivo: monitor de
+    /// origen, perfil de calidad y/o permiso. Se recuerda para la próxima
+    /// conexión y, si está conectado, se aplica en el acto.
+    pub fn apply_device(&self, fp: &Fingerprint, monitor_id: Option<String>, profile: Option<QualityProfile>, permission: Option<Permission>) -> bool {
+        let known = {
+            let mut t = self.inner.trust.lock().unwrap();
+            let ok = t.update(fp, |d| {
+                if let Some(m) = &monitor_id {
+                    d.last_monitor = Some(m.clone());
+                }
+                if let Some(p) = profile {
+                    d.profile = Some(p);
+                }
+                if let Some(p) = permission {
+                    d.permission = p;
+                }
+            });
+            if ok {
+                self.inner.persist.save(&t);
+            }
+            ok
+        };
+        if let Some((_, tx)) = self.inner.outboxes.lock().unwrap().get(fp) {
+            let _ = tx.send(Outgoing::Apply { monitor_id, profile });
+        }
+        known
     }
 
     /// Bucle de aceptación. No retorna mientras el endpoint esté abierto.
@@ -585,7 +622,7 @@ async fn run_session(
         }
     }
     let permission = inner.trust.lock().unwrap().get(&peer).map(|d| d.permission).unwrap_or(Permission::ViewOnly);
-    inner.ui.event(HostEvent::Connected { slot, name: name.clone(), permission });
+    inner.ui.event(HostEvent::Connected { slot, name: name.clone(), permission, device_key: TrustStore::key_of(&peer) });
 
     let profile = prefs.and_then(|d| d.profile).unwrap_or_else(|| default_profile(permission));
     let mut params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, profile);
@@ -618,7 +655,7 @@ async fn run_session(
             }
         }
     });
-    let (otx, mut orx) = mpsc::unbounded_channel::<Message>();
+    let (otx, mut orx) = mpsc::unbounded_channel::<Outgoing>();
     inner.outboxes.lock().unwrap().insert(peer, (gen, otx));
     let result = loop {
         let msg = tokio::select! {
@@ -628,8 +665,37 @@ async fn run_session(
                 None => break Ok(()),
             },
             Some(o) = orx.recv() => {
-                if let Err(e) = send(&mut tx, o).await {
-                    break Err(e);
+                match o {
+                    Outgoing::Msg(m) => {
+                        if let Err(e) = send(&mut tx, m).await {
+                            break Err(e);
+                        }
+                    }
+                    Outgoing::Apply { monitor_id, profile } => {
+                        // Cambio ordenado desde la PC (panel o perfil de estudio).
+                        if let Some(m) = monitor_id.and_then(|id| inner.platform.topology().by_id(&id).cloned()) {
+                            if !matches!(mode, Mode::Extend { .. }) {
+                                mode = Mode::Mirror { monitor_id: m.id.clone() };
+                                monitor = m;
+                            }
+                        }
+                        let prof = profile.unwrap_or(params.profile);
+                        params = crate::choose_params(monitor.bounds.w as u32, monitor.bounds.h as u32, &screen, &decoder, prof);
+                        drop(video);
+                        video = start_video(inner, &conn, &monitor, params.clone(), slot);
+                        let perm = inner.trust.lock().unwrap().get(&peer).map(|d| d.permission).unwrap_or(Permission::ViewOnly);
+                        let cfg = Message::SessionConfig {
+                            slot,
+                            mode: mode.clone(),
+                            permission: perm,
+                            params: params.clone(),
+                            present_rotation: Rotation::R0,
+                            resume_ticket: ticket.clone(),
+                        };
+                        if let Err(e) = send(&mut tx, cfg).await {
+                            break Err(e);
+                        }
+                    }
                 }
                 continue;
             }
