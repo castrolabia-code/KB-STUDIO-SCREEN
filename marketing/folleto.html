@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>KB Studio Screen — by Castro Labs</title>
+<style>
+  @font-face { font-family: "Inter"; src: url(fonts/inter-latin.woff2) format("woff2"); font-weight: 100 900; }
+  @page { size: A4; margin: 0; }
+  :root {
+    --bg: #0b0e13; --panel: #141922; --panel2: #1a202a; --edge: #2a323d; --text: #eef3f8; --muted: #9aa6b5;
+    --blue: #3d8bff; --blue2: #8cc2ff; --amber: #f2a54a; --green: #47d985;
+  }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, sans-serif; font-feature-settings: "tnum" 1; }
+  .page { width: 210mm; height: 297mm; position: relative; overflow: hidden; page-break-after: always; break-after: page; padding: 18mm 16mm 16mm;
+    background: radial-gradient(120mm 80mm at 100% 0%, rgba(61,139,255,.16), transparent 70%), radial-gradient(110mm 70mm at 0% 100%, rgba(242,165,74,.10), transparent 70%), var(--bg); }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  /* encabezado y pie de página interiores */
+  .runhead { position: absolute; top: 8mm; left: 16mm; right: 16mm; display: flex; align-items: center; gap: 3mm; font-size: 7.5pt; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+  .runhead img { width: 6mm; height: 6mm; }
+  .runhead .r { margin-left: auto; color: var(--amber); }
+  .foot { position: absolute; bottom: 8mm; left: 16mm; right: 16mm; display: flex; font-size: 7pt; color: #6b7686; border-top: 1px solid var(--edge); padding-top: 2.5mm; }
+  .foot .r { margin-left: auto; }
+  h1, h2, h3 { margin: 0; }
+  .kicker { color: var(--amber); font-weight: 700; font-size: 8.5pt; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 3mm; }
+  h2 { font-size: 26pt; font-weight: 800; line-height: 1.08; letter-spacing: -.01em; margin-bottom: 4mm; }
+  h2 .hl { color: var(--blue2); }
+  h3 { font-size: 11.5pt; font-weight: 700; margin-bottom: 1.5mm; }
+  p { margin: 0 0 3mm; font-size: 10pt; line-height: 1.55; color: #d3dbe5; }
+  .lead { font-size: 12pt; line-height: 1.55; color: #dfe6ee; }
+  .muted { color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .card { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--edge); border-radius: 4mm; padding: 5mm; }
+  .card p { font-size: 9pt; margin: 0; color: var(--muted); line-height: 1.5; }
+  .icon { width: 10mm; height: 10mm; border-radius: 2.5mm; display: grid; place-items: center; margin-bottom: 3mm;
+    background: rgba(61,139,255,.14); border: 1px solid rgba(61,139,255,.45); }
+  .icon.a { background: rgba(242,165,74,.14); border-color: rgba(242,165,74,.5); }
+  .icon svg { width: 5.5mm; height: 5.5mm; stroke: var(--blue2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .icon.a svg { stroke: var(--amber); }
+  .shot { border-radius: 3mm; border: 1px solid #36404d; box-shadow: 0 6mm 14mm rgba(0,0,0,.55); display: block; width: 100%; }
+  .window { border-radius: 3mm; overflow: hidden; border: 1px solid #36404d; box-shadow: 0 8mm 18mm rgba(0,0,0,.6); background: #0d1015; }
+  .window .bar { height: 6mm; background: linear-gradient(180deg, #232a33, #1a2028); display: flex; align-items: center; gap: 1.6mm; padding: 0 3mm; font-size: 7pt; color: var(--muted); }
+  .window .bar i { width: 2.2mm; height: 2.2mm; border-radius: 50%; background: #3a4452; }
+  .window .bar span { margin-left: 2mm; }
+  .window img { display: block; width: 100%; }
+  .window.crop img { height: 64mm; object-fit: cover; object-position: top; }
+  .crop2 { width: 100%; }
+  .caption { font-size: 7.5pt; color: #7d8898; margin-top: 2mm; }
+  ul.checks { list-style: none; padding: 0; margin: 0; }
+  ul.checks li { position: relative; padding-left: 7mm; margin-bottom: 2.6mm; font-size: 9.6pt; line-height: 1.45; color: #d6dde6; }
+  ul.checks li::before { content: ""; position: absolute; left: 0; top: .8mm; width: 4mm; height: 4mm; border-radius: 50%; background: rgba(71,217,133,.15); border: 1px solid var(--green); }
+  ul.checks li::after { content: ""; position: absolute; left: 1.3mm; top: 1.7mm; width: 1.4mm; height: 2.2mm; border: solid var(--green); border-width: 0 .45mm .45mm 0; transform: rotate(45deg); }
+  ul.checks b { color: #fff; }
+  .badge { display: inline-flex; align-items: center; gap: 1.6mm; padding: 1.6mm 3.2mm; border-radius: 99px; font-size: 8pt; font-weight: 600; letter-spacing: .04em;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22); color: #fff; backdrop-filter: blur(4px); }
+  .badge i { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: var(--green); box-shadow: 0 0 2mm var(--green); }
+  .tag { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .8mm 2.2mm; border-radius: 1mm; background: rgba(242,165,74,.16); color: var(--amber); border: 1px solid rgba(242,165,74,.5); vertical-align: middle; }
+
+  /* ---------- PORTADA ---------- */
+  .cover { padding: 0; background: #05070a; }
+  .cover .photo { position: absolute; inset: 0; background: url(img/estudio.webp) center 42% / cover; filter: saturate(1.08) contrast(1.05); }
+  .cover .shade { position: absolute; inset: 0; background:
+      linear-gradient(180deg, rgba(5,7,10,.85) 0%, rgba(5,7,10,.25) 26%, rgba(5,7,10,.15) 45%, rgba(5,7,10,.75) 66%, rgba(5,7,10,.97) 82%, #05070a 100%); }
+  .cover .top { position: absolute; top: 14mm; left: 16mm; right: 16mm; display: flex; align-items: center; gap: 3.5mm; }
+  .cover .top img { width: 12mm; height: 12mm; }
+  .cover .top .co { font-weight: 800; letter-spacing: .24em; font-size: 9pt; text-transform: uppercase; }
+  .cover .top .co small { display: block; color: var(--amber); letter-spacing: .2em; font-size: 7pt; font-weight: 700; margin-top: .6mm; }
+  .cover .top .ed { margin-left: auto; font-size: 8pt; color: #c9d2dd; letter-spacing: .12em; text-transform: uppercase; }
+  .cover .title { position: absolute; left: 16mm; right: 16mm; bottom: 70mm; }
+  .cover .title .k { color: var(--amber); font-weight: 800; letter-spacing: .3em; font-size: 10pt; text-transform: uppercase; margin-bottom: 4mm; text-shadow: 0 1mm 3mm #000; }
+  .cover h1 { font-size: 54pt; line-height: .92; font-weight: 900; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
+    text-shadow: 0 .5mm 0 #000, 0 1.2mm 0 #05070a, 0 3mm 8mm rgba(0,0,0,.95), 0 0 14mm rgba(61,139,255,.55); }
+  .cover h1 span { display: block; background: linear-gradient(90deg, #8cc2ff, #3d8bff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 1mm 2mm #000); }
+  .cover .sub { font-size: 15pt; line-height: 1.4; margin-top: 6mm; color: #e9eef4; max-width: 160mm; font-weight: 500; text-shadow: 0 1mm 3mm #000; }
+  .cover .badges { position: absolute; left: 16mm; right: 16mm; bottom: 44mm; display: flex; flex-wrap: wrap; gap: 2.5mm; }
+  .cover .bottom { position: absolute; left: 16mm; right: 16mm; bottom: 14mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .cover .bottom div { border-top: 2px solid var(--blue); padding-top: 3mm; font-size: 8.5pt; color: #c7d0db; line-height: 1.45; }
+  .cover .bottom b { display: block; color: #fff; font-size: 10.5pt; margin-bottom: 1mm; }
+
+  /* ---------- flujo "cómo funciona" ---------- */
+  .flow { display: grid; grid-template-columns: 1fr 22mm 1fr; align-items: center; gap: 3mm; margin-top: 4mm; }
+  .node { background: var(--panel2); border: 1px solid var(--edge); border-radius: 3.5mm; padding: 4mm; text-align: center; font-size: 8.5pt; color: var(--muted); }
+  .node b { display: block; color: #fff; font-size: 10.5pt; margin: 1.5mm 0 .8mm; }
+  .wire { text-align: center; font-size: 7pt; color: var(--blue2); letter-spacing: .08em; text-transform: uppercase; }
+  .wire .l { height: 1.2mm; border-radius: 1mm; background: linear-gradient(90deg, var(--blue), var(--amber)); margin: 2mm 0; box-shadow: 0 0 3mm rgba(61,139,255,.6); }
+  .devs { display: flex; flex-direction: column; gap: 2mm; }
+  .devs .node { display: flex; align-items: center; gap: 3mm; text-align: left; padding: 3mm 4mm; }
+  .devs .node b { margin: 0; font-size: 9.5pt; }
+  .led { width: 2.4mm; height: 2.4mm; border-radius: 50%; background: var(--green); box-shadow: 0 0 2mm var(--green); flex: none; }
+
+  /* ---------- teléfono ---------- */
+  .phone { width: 58mm; border-radius: 9mm; padding: 2.6mm; background: linear-gradient(160deg, #3a414b, #11151b); box-shadow: 0 10mm 20mm rgba(0,0,0,.7), inset 0 0 0 .4mm #59626e; margin: 0 auto; }
+  .phone img { width: 100%; border-radius: 6.6mm; display: block; }
+
+  /* ---------- pasos ---------- */
+  .steps { counter-reset: s; display: flex; flex-direction: column; gap: 3mm; }
+  .step { counter-increment: s; display: grid; grid-template-columns: 10mm 1fr; gap: 3.5mm; align-items: start; background: var(--panel); border: 1px solid var(--edge); border-radius: 3mm; padding: 3.5mm 4mm; }
+  .step::before { content: counter(s); width: 10mm; height: 10mm; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 12pt; color: #fff;
+    background: linear-gradient(180deg, #5a9dff, #2f74e6); box-shadow: 0 1.5mm 4mm rgba(47,116,230,.45); }
+  .step h3 { font-size: 10.5pt; margin-bottom: .8mm; }
+  .step p { font-size: 9pt; margin: 0; color: var(--muted); line-height: 1.45; }
+  .step.amber::before { background: linear-gradient(180deg, #f6b866, #e08c25); box-shadow: 0 1.5mm 4mm rgba(224,140,37,.45); }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  table.spec th { text-align: left; width: 46mm; color: var(--blue2); font-weight: 600; padding: 2.4mm 3mm; vertical-align: top; border-bottom: 1px solid var(--edge); }
+  table.spec td { padding: 2.4mm 3mm; color: #d6dde6; border-bottom: 1px solid var(--edge); line-height: 1.45; }
+  table.spec tr:nth-child(odd) td, table.spec tr:nth-child(odd) th { background: rgba(255,255,255,.025); }
+  .gest { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  .gest td { padding: 2.2mm 3mm; border-bottom: 1px solid var(--edge); color: #d6dde6; }
+  .gest td:first-child { color: #fff; font-weight: 600; width: 50mm; }
+  .cta { margin-top: 6mm; border-radius: 4mm; padding: 6mm 7mm; display: flex; align-items: center; gap: 6mm;
+    background: linear-gradient(120deg, rgba(61,139,255,.22), rgba(242,165,74,.18)); border: 1px solid rgba(140,194,255,.45); }
+  .cta h3 { font-size: 15pt; font-weight: 800; }
+  .cta p { margin: 1.5mm 0 0; font-size: 9.5pt; }
+  .cta img { width: 16mm; height: 16mm; }
+  .note { font-size: 7pt; color: #6b7686; line-height: 1.5; margin-top: 4mm; }
+</style>
+</head>
+<body>
+
+<!-- ================= 1. PORTADA ================= -->
+<section class="page cover">
+  <div class="photo"></div><div class="shade"></div>
+  <div class="top">
+    <img src="img/logo.svg" alt="">
+    <div class="co">Castro Labs<small>Software para estudios</small></div>
+    <div class="ed">Edición 2026 · v0.8</div>
+  </div>
+  <div class="title">
+    <div class="k">Pantallas táctiles para tu estudio</div>
+    <h1>KB Studio<span>Screen</span></h1>
+    <div class="sub">Convertí tu tablet y tu teléfono en pantallas táctiles de tu PC. Mové los faders de tu DAW con el dedo y mostrale la letra al cantante, sin cables y sin Internet.</div>
+  </div>
+  <div class="badges">
+    <span class="badge"><i></i>Windows 10 y 11</span>
+    <span class="badge"><i></i>Android 10 o superior</span>
+    <span class="badge"><i></i>Hasta 3 pantallas</span>
+    <span class="badge"><i></i>Sin suscripción</span>
+    <span class="badge"><i></i>100 % red local y cifrado</span>
+  </div>
+  <div class="bottom">
+    <div><b>Control con el dedo</b>Arrastre continuo de faders y perillas sobre la interfaz original de tu DAW.</div>
+    <div><b>Modo cantante</b>Letras en PDF o texto en la tablet, controladas desde la PC.</div>
+    <div><b>Perfiles de estudio</b>Grabación, mezcla o mastering: todo listo con un clic.</div>
+  </div>
+</section>
+
+<!-- ================= 2. QUÉ ES ================= -->
+<section class="page">
+  <div class="runhead"><img src="img/logo.svg" alt="">KB Studio Screen<span class="r">Qué es</span></div>
+  <div class="kicker">El producto</div>
+  <h2>Tu estudio, <span class="hl">en la palma de la mano</span></h2>
+  <p class="lead">KB Studio Screen es un sistema de dos partes: un programa para tu PC con Windows y una app para Android. Juntos convierten hasta <b>tres tablets o teléfonos</b> en pantallas táctiles de tu computadora, por tu propia red Wi-Fi.</p>
+  <p>No es un controlador MIDI ni un mixer "de mentira": ves y tocás <b>la interfaz real</b> del programa que usás todos los días. Si en tu monitor hay un fader, lo movés con el dedo en la tablet, con arrastre continuo, como si estuvieras frente a la consola.</p>
+
+  <div class="flow">
+    <div class="node">
+      <svg width="40" height="30" viewBox="0 0 40 30" fill="none" stroke="#8cc2ff" stroke-width="2"><rect x="3" y="2" width="34" height="20" rx="2"/><path d="M14 28h12M20 22v6"/></svg>
+      <b>Tu PC con Windows</b>KB Studio Screen captura el monitor que elijas y recibe tus toques.
+    </div>
+    <div class="wire">Wi-Fi local<div class="l"></div>Cifrado TLS 1.3</div>
+    <div class="devs">
+      <div class="node"><span class="led"></span><div><b>Tablet del productor</b>Control táctil del mixer</div></div>
+      <div class="node"><span class="led"></span><div><b>Tablet del cantante</b>Letras · solo lectura</div></div>
+      <div class="node"><span class="led"></span><div><b>Teléfono</b>Otro monitor, otra vista</div></div>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-top: 8mm">
+    <div class="card">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M6 3v18M12 3v18M18 3v18"/><rect x="4" y="13" width="4" height="3" rx="1"/><rect x="10" y="7" width="4" height="3" rx="1"/><rect x="16" y="15" width="4" height="3" rx="1"/></svg></div>
+      <h3>Para el productor</h3>
+      <p>Tené el mixer de tu DAW en una tablet al lado del micrófono o del instrumento. Ajustá niveles sin volver a la PC.</p>
+    </div>
+    <div class="card">
+      <div class="icon a"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg></div>
+      <h3>Para el cantante</h3>
+      <p>La letra a pantalla completa en su tablet, con avance automático. Él sólo lee; vos controlás todo desde la PC.</p>
+    </div>
+    <div class="card">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="9" height="7" rx="1"/><rect x="13" y="4" width="9" height="7" rx="1"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg></div>
+      <h3>Para todo el estudio</h3>
+      <p>Hasta tres pantallas a la vez, cada una mirando el monitor que quieras y con el permiso que vos le des.</p>
+    </div>
+  </div>
+
+  <div class="window crop" style="margin-top: 8mm">
+    <div class="bar"><i></i><i></i><i></i><span>KB Studio Screen — Panel de control</span></div>
+    <img src="img/panel_top.png" alt="Panel de control de KB Studio Screen">
+  </div>
+  <div class="caption">Panel de control en la PC: aprobación de dispositivos con PIN, estado de cada pantalla y tu estudio de fondo.</div>
+  <div class="foot">KB Studio Screen · by Castro Labs<span class="r">2</span></div>
+</section>
+
+<!-- ================= 3. CARACTERÍSTICAS ================= -->
+<section class="page">
+  <div class="runhead"><img src="img/logo.svg" alt="">KB Studio Screen<span class="r">Características</span></div>
+  <div class="kicker">Funciones</div>
+  <h2>Todo lo que necesitás, <span class="hl">nada que estorbe</span></h2>
+  <div class="grid3">
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg></div><h3>Duplicá cualquier monitor</h3><p>Elegí cuál de tus monitores ver en cada dispositivo y cambialo en vivo, desde la tablet o desde la PC.</p></div>
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><path d="M9 11V5a2 2 0 0 1 4 0v6"/><path d="M13 10a2 2 0 0 1 4 0v3a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-2-3a2 2 0 0 1 3-2l1 1"/></svg></div><h3>Control táctil real</h3><p>Clic, arrastre continuo de faders, rueda con dos dedos. Pellizcá para hacer zoom sólo en tu pantalla.</p></div>
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="11" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/><rect x="8.5" y="15" width="7" height="6" rx="1.5"/></svg></div><h3>Hasta 3 pantallas</h3><p>Tablets y teléfonos en cualquier combinación, con un solo cursor bien administrado.</p></div>
+    <div class="card"><div class="icon a"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 19h4"/></svg></div><h3>Modo cantante</h3><p>Enviá un PDF o .txt arrastrándolo al panel. Páginas, avance automático, contraste y bloqueo.</p></div>
+    <div class="card"><div class="icon a"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2.5"/></svg></div><h3>Perfiles de estudio</h3><p>Grabación vocal, Mezcla, Mastering y Personalizado. Guardá y aplicá configuraciones con un clic.</p></div>
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg></div><h3>Emparejado en segundos</h3><p>Escaneá un QR o ingresá un PIN de un solo uso. La próxima vez se conecta solo.</p></div>
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l2 2 3-4"/></svg></div><h3>Calidad a tu medida</h3><p><b style="color:#fff">Mezcla</b> para respuesta rápida, <b style="color:#fff">Letras</b> para máxima nitidez o <b style="color:#fff">Automática</b>.</p></div>
+    <div class="card"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></div><h3>Reconexión automática</h3><p>Si el Wi-Fi se corta, la app vuelve sola a la misma pantalla, sin repetir el emparejamiento.</p></div>
+    <div class="card"><div class="icon a"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div><h3>Panel de control propio</h3><p>Ventana propia en Windows: aprobaciones, pantallas, perfiles, letras y dispositivos de confianza.</p></div>
+  </div>
+  <div style="margin-top: 7mm"><img class="shot crop2" src="img/sec_slots.png" alt=""><div class="caption">Cada pantalla con su monitor de origen y su calidad, cambiables en vivo desde el panel.</div></div>
+  <div class="foot">KB Studio Screen · by Castro Labs<span class="r">3</span></div>
+</section>
+
+<!-- ================= 4. VENTAJAS ================= -->
+<section class="page">
+  <div class="runhead"><img src="img/logo.svg" alt="">KB Studio Screen<span class="r">Ventajas y beneficios</span></div>
+  <div class="kicker">Por qué elegirlo</div>
+  <h2>Más libertad en la sesión, <span class="hl">menos vueltas a la PC</span></h2>
+  <div class="grid2" style="grid-template-columns: 1.25fr .75fr; gap: 8mm; align-items: start">
+    <div>
+      <ul class="checks">
+        <li><b>Usás lo que ya tenés.</b> Tu tablet y tu teléfono pasan a ser pantallas de estudio. Sin hardware nuevo.</li>
+        <li><b>La interfaz real, no una copia.</b> Funciona con tu DAW y tus plugins tal como los usás: no hay que mapear nada.</li>
+        <li><b>Grabá solo, sin correr.</b> Ajustá niveles desde el lugar de toma, con el instrumento en la mano.</li>
+        <li><b>El cantante, enfocado.</b> Letra grande, legible y en solo lectura: no puede tocar nada por error.</li>
+        <li><b>Tu audio, intacto.</b> KB Studio Screen no toca el audio ni instala drivers de sonido: tu DAW sigue igual de estable.</li>
+        <li><b>Sin Internet, sin cuentas, sin suscripción.</b> Funciona en tu red local. Pagás una vez y es tuyo.</li>
+        <li><b>Listo en minutos.</b> Instalador para Windows, app para Android y emparejamiento por QR.</li>
+        <li><b>Seguro por diseño.</b> Cada dispositivo necesita tu aprobación y podés revocarlo cuando quieras.</li>
+      </ul>
+      <div class="card" style="margin-top: 5mm">
+        <div class="icon a"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Privacidad y seguridad</h3>
+        <p>Conexión cifrada de punta a punta (TLS 1.3) y autenticación mutua de la PC y cada dispositivo. PIN y QR de un solo uso, que vencen en minutos. Permisos por dispositivo: <b style="color:#fff">control</b> o <b style="color:#fff">solo ver</b>. Las letras se borran de la tablet al cerrarlas. Sin telemetría: nada sale de tu estudio.</p>
+      </div>
+    </div>
+    <div>
+      <div class="phone"><img src="img/app_es.png" alt="App KB Studio Screen en Android"></div>
+      <div class="caption" style="text-align:center">App para Android: encuentra tu PC sola en la red.</div>
+      <img class="shot" src="img/sec_singer.png" alt="" style="margin-top: 7mm"><div class="caption">Modo cantante: la letra se maneja desde la PC.</div>
+    </div>
+  </div>
+    <div class="foot">KB Studio Screen · by Castro Labs<span class="r">4</span></div>
+</section>
+
+<!-- ================= 5. INSTALACIÓN Y USO ================= -->
+<section class="page">
+  <div class="runhead"><img src="img/logo.svg" alt="">KB Studio Screen<span class="r">Instalación y uso</span></div>
+  <div class="kicker">Guía rápida</div>
+  <h2>De la caja al estudio <span class="hl">en 5 minutos</span></h2>
+  <div class="grid2" style="gap: 7mm; align-items: start">
+    <div>
+      <h3 style="color: var(--blue2); margin-bottom: 3mm">Instalación</h3>
+      <div class="steps">
+        <div class="step"><div><h3>Instalá el programa en la PC</h3><p>Ejecutá <b style="color:#fff">KBStudioScreen-Setup.exe</b>. Windows pide permiso de administrador sólo para instalar y habilitar la red privada en el Firewall.</p></div></div>
+        <div class="step"><div><h3>Instalá la app en Android</h3><p>Abrí <b style="color:#fff">KBStudioScreen.apk</b> en tu tablet o teléfono y confirmá la instalación.</p></div></div>
+        <div class="step"><div><h3>Misma red Wi-Fi</h3><p>Conectá la PC y los dispositivos a la misma red (ideal 5 GHz). En Windows, perfil de red <b style="color:#fff">Privada</b>.</p></div></div>
+      </div>
+      <h3 style="color: var(--amber); margin: 6mm 0 3mm">Primer uso</h3>
+      <div class="steps">
+        <div class="step amber"><div><h3>Abrí KB Studio Screen</h3><p>Desde el menú Inicio. Se abre el panel de control en su propia ventana.</p></div></div>
+        <div class="step amber"><div><h3>Emparejá</h3><p>En la app: <b style="color:#fff">Escanear QR</b> (el QR está en el panel) o tocá tu PC y escribí el PIN que aparece.</p></div></div>
+        <div class="step amber"><div><h3>Aprobá y listo</h3><p>En el panel elegí <b style="color:#fff">Control táctil</b> o <b style="color:#fff">Solo ver</b>. La próxima vez se conecta solo.</p></div></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color: var(--blue2); margin-bottom: 3mm">Gestos</h3>
+      <table class="gest">
+        <tr><td>Tocar</td><td>Clic</td></tr>
+        <tr><td>Tocar y arrastrar</td><td>Mover faders, perillas y ventanas</td></tr>
+        <tr><td>Dos dedos arriba/abajo</td><td>Rueda del mouse</td></tr>
+        <tr><td>Pellizcar</td><td>Zoom sólo en tu pantalla</td></tr>
+      </table>
+      <h3 style="color: var(--blue2); margin: 6mm 0 3mm">Modo cantante en 3 pasos</h3>
+      <ul class="checks">
+        <li>Emparejá la tablet del cantante en <b>Solo ver</b>.</li>
+        <li>Arrastrá el <b>PDF o .txt</b> de la letra al panel.</li>
+        <li>Manejá páginas, avance automático y <b>bloqueo</b> desde la PC.</li>
+      </ul>
+      <img class="shot" src="img/sec_pair.png" alt="" style="margin-top: 5mm">
+      <div class="caption">Emparejamiento por QR desde el panel.</div>
+    </div>
+  </div>
+  <div class="foot">KB Studio Screen · by Castro Labs<span class="r">5</span></div>
+</section>
+
+<!-- ================= 6. ESPECIFICACIONES ================= -->
+<section class="page">
+  <div class="runhead"><img src="img/logo.svg" alt="">KB Studio Screen<span class="r">Especificaciones técnicas</span></div>
+  <div class="kicker">Ficha técnica</div>
+  <h2>Especificaciones <span class="hl">técnicas</span></h2>
+  <table class="spec">
+    <tr><th>PC</th><td>Windows 10 u 11, 64 bits. Funciona sin privilegios de administrador.</td></tr>
+    <tr><th>Dispositivos</th><td>Android 10 o superior: tablets y teléfonos, horizontal o vertical. Arquitecturas ARM 64/32 bits y x86-64.</td></tr>
+    <tr><th>Pantallas simultáneas</th><td>Hasta 3, cada una con su monitor de origen, su calidad y su permiso.</td></tr>
+    <tr><th>Red</th><td>Wi-Fi local (recomendado 5 GHz). Descubrimiento automático (mDNS), QR o IP manual. No requiere Internet.</td></tr>
+    <tr><th>Video</th><td>H.264 con aceleración por hardware cuando está disponible (NVIDIA, AMD, Intel) y respaldo por software. Resolución adaptada a cada pantalla; decodificación por hardware en Android.</td></tr>
+    <tr><th>Captura</th><td>DXGI Desktop Duplication: cualquier monitor físico, con el cursor visible.</td></tr>
+    <tr><th>Control</th><td>Mapeo exacto del toque al píxel de Windows (barras negras, zoom y monitores en cualquier posición). Arrastre continuo y rueda.</td></tr>
+    <tr><th>Seguridad</th><td>QUIC con TLS 1.3 y autenticación mutua por certificado. Emparejamiento con PIN (SPAKE2) o QR de un solo uso. Revocación inmediata. Panel local protegido con token.</td></tr>
+    <tr><th>Modo cantante</th><td>PDF y texto (UTF-8 / Windows-1252) hasta 64 MB. Avance automático en 10 velocidades, 3 temas de contraste, bloqueo remoto.</td></tr>
+    <tr><th>Idiomas</th><td>Español e inglés (app); español (panel).</td></tr>
+    <tr><th>Audio</th><td>No transmite ni modifica el audio: tu DAW y tu interfaz de sonido no se tocan.</td></tr>
+    <tr><th>Licencia</th><td>Pago único, sin suscripciones ni cuentas.</td></tr>
+    <tr><th>Próximamente <span class="tag">Roadmap</span></th><td><b style="color:#fff">Modo Extender</b>: cada dispositivo como un monitor más de Windows (el controlador ya está desarrollado y en certificación). Conexión por USB.</td></tr>
+  </table>
+
+  <div class="cta">
+    <img src="img/logo.svg" alt="">
+    <div>
+      <h3>KB Studio Screen · by Castro Labs</h3>
+      <p>Software para estudios de grabación. Llevá tu estudio a cualquier pantalla.</p>
+    </div>
+  </div>
+  <div class="note">Las capturas de pantalla muestran la interfaz real del programa con datos de ejemplo. Reason, Windows, Android y las demás marcas mencionadas pertenecen a sus respectivos titulares. El rendimiento depende de la PC, la placa de video y la calidad de la red Wi-Fi.</div>
+  <div class="foot">KB Studio Screen · by Castro Labs<span class="r">6</span></div>
+</section>
+
+</body>
+</html>
