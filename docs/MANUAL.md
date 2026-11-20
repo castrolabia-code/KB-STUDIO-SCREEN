@@ -25,9 +25,7 @@ Funciona sólo en tu red local: sin Internet, sin cuentas y sin suscripciones. *
 ## 2. Primer uso
 
 1. **La PC y los dispositivos tienen que estar en la misma red Wi-Fi** (mejor 5 GHz). Si la PC va por cable al mismo router, también sirve. Evitá las redes de "invitados": suelen aislar los equipos entre sí.
-2. Abrí **KB Studio Screen** en la PC. Se abren dos cosas:
-   - una **ventana negra**: es el motor. **Tiene que quedar abierta** (podés minimizarla);
-   - el **panel de control** en tu navegador.
+2. Abrí **KB Studio Screen** en la PC (menú Inicio). Se abre la **ventana del panel de control**. El motor queda trabajando en segundo plano aunque cierres esa ventana; para volver a verla, abrí KB Studio Screen otra vez desde el menú Inicio. Para apagarlo del todo usá el botón **Cerrar KB Studio Screen** (arriba a la derecha del panel).
 3. En el dispositivo abrí la app y emparejalo de una de estas dos formas:
    - **QR:** en el panel tocá **Mostrar QR nuevo** y en la app **Escanear QR**.
    - **PIN:** en la app tocá tu PC en la lista "PCs en tu red"; en el panel aparece un **PIN de 6 dígitos** que escribís en el dispositivo.
@@ -88,7 +86,7 @@ En la tablet (si no está bloqueada) también hay botones para páginas, avance,
 
 | Problema | Solución |
 |---|---|
-| La app no encuentra la PC | ¿Está abierta la ventana negra? ¿Mismo Wi-Fi? Probá con el **QR** o **Conectar por IP** (la dirección figura en el panel). |
+| La app no encuentra la PC | ¿Está abierto KB Studio Screen en la PC (menú Inicio)? ¿Mismo Wi-Fi? Probá con el **QR** o **Conectar por IP** (la dirección figura en el panel). |
 | "No se pudo llegar a la PC" | En Windows: Configuración → Red → tu red → **Perfil de red: Privada**. La red "Pública" bloquea las conexiones. |
 | La imagen va lenta o con saltos | Usá Wi-Fi de 5 GHz, acercate al router, o elegí calidad **Mezcla**. |
 | El toque no hace nada | Fijate que el dispositivo tenga **Control táctil** y que **Bloquear tacto** esté apagado. Si el programa de destino corre **como administrador**, Windows no permite controlarlo: abrilo normal. |

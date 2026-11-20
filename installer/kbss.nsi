@@ -10,7 +10,7 @@ Unicode true
 
 !define APP "KB Studio Screen"
 !define COMPANY "Castro Labs"
-!define VERSION "0.7.0"
+!define VERSION "0.7.1"
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\KBStudioScreen"
 !define PORT "47800"
 

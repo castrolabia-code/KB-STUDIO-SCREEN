@@ -190,6 +190,14 @@ impl Panel {
                     }
                 }
             }
+            (Method::Post, "/api/quit") => {
+                // Cerrar el programa desde el panel: responde y sale enseguida.
+                std::thread::spawn(|| {
+                    std::thread::sleep(std::time::Duration::from_millis(400));
+                    std::process::exit(0);
+                });
+                json_resp(json!({"ok": true}), 200)
+            }
             (Method::Post, "/api/slot") => {
                 // Cambio en vivo de un dispositivo desde el panel.
                 let v: Value = serde_json::from_slice(&body).unwrap_or_default();

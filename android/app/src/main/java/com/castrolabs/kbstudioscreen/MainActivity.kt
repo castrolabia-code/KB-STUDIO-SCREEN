@@ -256,35 +256,49 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth().padding(12.dp), shape = RoundedCornerShape(12.dp),
             color = Color(0xFF1C222B), border = BorderStroke(1.dp, Color(0xFF38424F)),
         ) {
-            Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Screw(); Spacer(Modifier.width(12.dp))
-                LevelLogo(); Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    // Nombre: blanco, grueso y con sombreado profundo para máximo contraste.
-                    Text("KB STUDIO SCREEN", color = Color.White, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 21.sp, letterSpacing = 2.sp, maxLines = 1,
-                        style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 5f), 10f)))
-                    Text(stringResource(R.string.brand).uppercase(), color = Amber, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 3.sp,
-                        style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 3f), 6f)))
+            val narrow = LocalConfiguration.current.screenWidthDp < 600
+            Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                // Fila 1: tornillo · logo · nombre · tornillo (el nombre nunca se parte).
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Screw(); Spacer(Modifier.width(12.dp))
+                    LevelLogo(); Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        // Nombre: blanco, grueso y con sombreado profundo para máximo contraste.
+                        Text("KB STUDIO SCREEN", color = Color.White, fontFamily = Display, fontWeight = FontWeight.Bold,
+                            fontSize = if (narrow) 19.sp else 24.sp, letterSpacing = if (narrow) 1.sp else 2.sp, maxLines = 1, softWrap = false,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 5f), 10f)))
+                        Text(stringResource(R.string.brand).uppercase(), color = Amber, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 11.sp,
+                            letterSpacing = 3.sp, maxLines = 1, softWrap = false,
+                            style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 3f), 6f)))
+                    }
+                    Spacer(Modifier.width(8.dp)); Screw()
                 }
-                var bgMenu by remember { mutableStateOf(false) }
-                Box {
-                    IconButton({ bgMenu = true }, Modifier.size(44.dp)) { Icon(Icons.Filled.Image, stringResource(R.string.bg_photo), tint = Metal) }
-                    DropdownMenu(bgMenu, { bgMenu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.bg_pick)) }, onClick = {
-                            bgMenu = false
-                            pickBg.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        })
-                        if (bgImage.value != null) DropdownMenuItem(text = { Text(stringResource(R.string.bg_remove)) }, onClick = {
-                            bgMenu = false; bgFile.delete(); loadBg()
-                        })
+                Spacer(Modifier.height(10.dp))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2A323D)))
+                Spacer(Modifier.height(4.dp))
+                // Fila 2: este dispositivo (tocar para renombrar) · foto de fondo.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onName, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Filled.Tablet, null, tint = Metal, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(storage.deviceName, color = Metal, maxLines = 1, fontSize = 13.sp, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f))
+                    }
+                    var bgMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton({ bgMenu = true }, Modifier.size(48.dp)) { Icon(Icons.Filled.Image, stringResource(R.string.bg_photo), tint = Metal) }
+                        DropdownMenu(bgMenu, { bgMenu = false }) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.bg_pick)) }, onClick = {
+                                bgMenu = false
+                                pickBg.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            })
+                            if (bgImage.value != null) DropdownMenuItem(text = { Text(stringResource(R.string.bg_remove)) }, onClick = {
+                                bgMenu = false; bgFile.delete(); loadBg()
+                            })
+                        }
                     }
                 }
-                TextButton(onClick = onName) {
-                    Icon(Icons.Filled.Tablet, null, tint = Metal, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(storage.deviceName, color = Metal, maxLines = 1, fontSize = 13.sp)
-                }
-                Spacer(Modifier.width(4.dp)); Screw()
             }
         }
     }
@@ -392,8 +406,10 @@ fun BigButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVect
     else base.background(Brush.verticalGradient(listOf(Color(0xFF5A9DFF), Color(0xFF2F74E6))))
     Row(styled.clickable(onClick = onClick).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         val fg = if (outlined) TextHi else Color.White
-        Icon(icon, null, tint = fg); Spacer(Modifier.width(10.dp))
-        Text(label, color = fg, fontFamily = Display, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        val narrow = LocalConfiguration.current.screenWidthDp < 600
+        Icon(icon, null, tint = fg, modifier = Modifier.size(if (narrow) 20.dp else 24.dp)); Spacer(Modifier.width(if (narrow) 8.dp else 10.dp))
+        Text(label, color = fg, fontFamily = Display, fontWeight = FontWeight.SemiBold, fontSize = if (narrow) 14.sp else 16.sp, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 

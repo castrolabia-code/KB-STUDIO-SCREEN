@@ -97,6 +97,7 @@ impl TrustPersistence for FilePersist {
 
 // ------------------------------------------------------------ consola
 
+mod app_window;
 mod profiles;
 mod ui;
 mod web;
@@ -221,6 +222,11 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     let endpoint = match server_endpoint(&ident, std::net::SocketAddr::from(([0, 0, 0, 0], port))) {
         Ok(e) => e,
         Err(e) => {
+            // Ya hay una copia funcionando: se reabre su ventana y se sale.
+            if let Ok(url) = std::fs::read_to_string(app_window::url_file(&Store::open().dir)) {
+                app_window::open_panel(url.trim());
+                std::process::exit(0);
+            }
             eprintln!("No se pudo abrir el puerto UDP {port}: {e}\n¿Hay otra copia de kbss-engine abierta?");
             std::process::exit(1);
         }
@@ -289,9 +295,14 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
         }
     });
     println!("Panel de control: {url}");
+    let _ = std::fs::write(app_window::url_file(&Store::open().dir), &url);
     if std::env::var("KBSS_NO_BROWSER").is_err() && !std::env::args().any(|a| a == "--sin-navegador") {
-        // Abre el navegador predeterminado (la URL sólo tiene caracteres seguros).
-        let _ = std::process::Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn();
+        app_window::open_panel(&url);
+    }
+    // Sin ventana negra: el motor trabaja oculto y se maneja desde el panel.
+    // `--consola` la deja visible (diagnóstico).
+    if !std::env::args().any(|a| a == "--consola") {
+        app_window::hide_own_console();
     }
 
     // Consola: las respuestas a aprobaciones tienen prioridad sobre los comandos.
