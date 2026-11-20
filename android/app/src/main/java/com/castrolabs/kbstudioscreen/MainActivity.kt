@@ -221,7 +221,9 @@ class MainActivity : ComponentActivity() {
                 Text(storage.deviceName, color = TextHi, maxLines = 1)
             }
             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                PosterTitle("KB STUDIO SCREEN", 44.sp)
+                // El título se ajusta al ancho: entra completo en teléfonos chicos y crece en tablets.
+                val titleSize = (LocalConfiguration.current.screenWidthDp / 8.6f).coerceIn(28f, 64f).sp
+                PosterTitle("KB STUDIO SCREEN", titleSize)
                 Text(stringResource(R.string.brand).uppercase(), color = Cyan, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = 18.sp,
                     style = LocalTextStyle.current.copy(shadow = Shadow(Color(0xFF140726), Offset(3f, 3f), 0f)))
             }

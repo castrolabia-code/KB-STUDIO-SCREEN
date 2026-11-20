@@ -11,6 +11,6 @@ cada dispositivo recuerda su monitor y su calidad.
 |---|---|---|
 | kbss-engine.exe | PC Windows 10/11 x64 | 8d4fa3d74f1ed542b70cbf54e87f8bf38ec0cbc71a42eb1053629e8dc0db4105 |
 | kb-probe-win.exe | PC (diagnóstico, solo lectura) | 4e683bfc46b2faef1d6f49092f5c2058b8e72a182ebae39e95fa59424ed3e87a |
-| KBStudioScreen.apk | Android 10+ | 07ccde6f2fcc80748a39a1a7fa8e9204c6f74cba850aa58c13cc3b13a6e236c4 |
+| KBStudioScreen.apk | Android 10+ | b181c420f1558061c10592770275782060d9896c6059e71445cdc9552630270c |
 
 Ejecutables sin firmar (versión de prueba). Guía: ../docs/GUIA-PRUEBA.md
