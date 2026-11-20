@@ -53,6 +53,9 @@
   <PropertyGroup>
     <!-- La firma se hace aparte (certificado de prueba en CI; EV/atestación en producción). -->
     <SignMode>Off</SignMode>
+    <!-- El WDK por NuGet 10.0.28000 trae ApiValidator sólo en x64 y los targets lo
+         buscan en x86: se ejecuta aparte en CI (paso "ApiValidator"). -->
+    <ApiValidator_Enable>false</ApiValidator_Enable>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -71,4 +74,8 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- InfVerif: el paquete NuGet no incluye la versión x86 que cargan los targets.
+       Con el WDK instalado (MSI/EWDK) puede ejecutarse con KBSS_INFVERIF=true.
+       PENDIENTE: validar el INF con infverif /u en una instalación completa del WDK. -->
+  <Target Name="InfVerif" Condition="'$(KBSS_INFVERIF)' == 'true'" DependsOnTargets="" />
 </Project>

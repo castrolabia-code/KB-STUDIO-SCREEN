@@ -103,6 +103,17 @@ jobs:
       - name: Build driver
         working-directory: driver/kbss-idd
         run: msbuild kbss_idd.vcxproj /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+      - name: ApiValidator (driver universal)
+        shell: pwsh
+        working-directory: driver/kbss-idd
+        run: |
+          $wdk = (Get-ChildItem -Directory packages -Filter 'Microsoft.Windows.WDK.x64.*').FullName
+          $av = Get-ChildItem -Recurse -Filter apivalidator.exe -Path "$wdk\c\bin" | Where-Object { $_.FullName -match '\\x64\\' } | Select-Object -First 1
+          $ddis = Get-ChildItem -Recurse -Filter UniversalDDIs.xml -Path "$wdk\c\build" | Where-Object { $_.FullName -match '\\x64\\' } | Select-Object -First 1
+          $wl = Get-ChildItem -Recurse -Filter ModuleWhiteList.xml -Path "$wdk\c\build" | Where-Object { $_.FullName -match '\\x64\\' } | Select-Object -First 1
+          $dll = (Get-ChildItem -Recurse -Filter kbss_idd.dll -Path x64 | Select-Object -First 1).FullName
+          & $av.FullName "-DriverPackagePath:$dll" "-SupportedApiXmlFiles:$($ddis.FullName)" "-ModuleWhiteListXmlFiles:$($wl.FullName)"
+          if ($LASTEXITCODE) { throw "ApiValidator: el driver usa APIs no universales" }
       - name: Test-sign and install driver
         shell: pwsh
         working-directory: driver/kbss-idd
