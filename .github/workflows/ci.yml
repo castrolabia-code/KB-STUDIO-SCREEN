@@ -83,6 +83,8 @@ jobs:
           if ($rule2 -match '47800') { throw "la desinstalación dejó la regla de firewall" }
           if (Test-Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\KBStudioScreen') { throw "quedó la entrada de desinstalación" }
           Write-Host "INSTALADOR OK: instalación, ejecución y desinstalación limpias."
+          # netsh devuelve 1 al no encontrar la regla (lo esperado tras desinstalar).
+          exit 0
       - uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
