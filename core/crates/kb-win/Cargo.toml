@@ -30,4 +30,10 @@ windows = { version = "0.62", features = [
   "Win32_System_Memory",
   "Win32_Security_Cryptography",
   "Win32_UI_Controls",
+  "Win32_Devices_DeviceAndDriverInstallation",
+  "Win32_Devices_Enumeration_Pnp",
+  "Win32_Devices_Properties",
+  "Win32_Storage_FileSystem",
+  "Win32_System_IO",
+  "Win32_Security",
 ] }

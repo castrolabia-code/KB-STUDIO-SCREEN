@@ -208,7 +208,44 @@ fn main() {
     }
 
     #[cfg(windows)]
-    run(platform);
+    {
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        if args.first().map(String::as_str) == Some("driver") {
+            std::process::exit(driver_cmd(&args[1..]));
+        }
+        run(platform);
+    }
+}
+
+/// Subcomandos de mantenimiento del driver de pantallas virtuales.
+/// `create-adapter` y `remove-adapter` requieren administrador (los usa el instalador).
+#[cfg(windows)]
+fn driver_cmd(args: &[String]) -> i32 {
+    use kb_win::idd;
+    let n = |i: usize, d: u32| args.get(i).and_then(|s| s.parse().ok()).unwrap_or(d);
+    let r: Result<String, String> = match args.first().map(String::as_str) {
+        Some("create-adapter") => idd::create_adapter().map(|_| "Adaptador virtual creado.".into()),
+        Some("remove-adapter") => idd::remove_adapter().map(|_| "Adaptador virtual quitado.".into()),
+        Some("info") => idd::VirtualDisplays::open().and_then(|v| v.info()).map(|i| format!("{i:?}")),
+        Some("add") => idd::VirtualDisplays::open().and_then(|v| {
+            idd::wait_ready(&v, std::time::Duration::from_secs(10))?;
+            v.add(n(3, 0), n(1, 1920), n(2, 1080), 60)?;
+            println!("Monitor agregado. Enter para quitarlo…");
+            let _ = std::io::stdin().read_line(&mut String::new());
+            Ok("Monitor quitado.".into())
+        }),
+        _ => Err("uso: kbss-engine driver create-adapter | remove-adapter | info | add ANCHO ALTO [RANURA]".into()),
+    };
+    match r {
+        Ok(m) => {
+            println!("{m}");
+            0
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            1
+        }
+    }
 }
 
 #[cfg(windows)]

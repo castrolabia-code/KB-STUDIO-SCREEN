@@ -1,0 +1,72 @@
+;
+; KB STUDIO SCREEN - driver de monitores virtuales (IddCx / UMDF 2)
+; Castro Labs. Basado en IddSampleDriver de Microsoft (MS-PL).
+;
+
+[Version]
+PnpLockDown=1
+Signature="$Windows NT$"
+ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}
+Class=Display
+ClassVer=2.0
+Provider=%ManufacturerName%
+CatalogFile=kbss_idd.cat
+DriverVer=11/20/2026,0.1.0.0
+
+[Manufacturer]
+; 10.0...18362 = Windows 10 1903 o posterior (IddCx 1.4) y Windows 11
+%ManufacturerName%=Standard,NT$ARCH$.10.0...18362
+
+[Standard.NT$ARCH$.10.0...18362]
+%DeviceName%=KbssIdd_Install, Root\KbssIdd
+%DeviceName%=KbssIdd_Install, KbssIdd
+
+[SourceDisksFiles]
+kbss_idd.dll=1
+
+[SourceDisksNames]
+1=%DiskName%
+
+[KbssIdd_Install.NT]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT
+CopyFiles=UMDriverCopy
+
+[KbssIdd_Install.NT.hw]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.HW
+AddReg=KbssIdd_HardwareDeviceSettings
+
+[KbssIdd_HardwareDeviceSettings]
+HKR,, "UpperFilters", %REG_MULTI_SZ%, "IndirectKmd"
+HKR, "WUDF", "DeviceGroupId", %REG_SZ%, "KbssIddGroup"
+; ACL del dispositivo: SYSTEM y Administradores total; usuarios interactivos
+; lectura/escritura para que kbss-engine controle monitores SIN elevarse.
+HKR,, Security,, "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;IU)"
+
+[KbssIdd_Install.NT.Services]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.Services
+
+[KbssIdd_Install.NT.Wdf]
+UmdfService=KbssIdd,KbssIdd_UmdfInstall
+UmdfServiceOrder=KbssIdd
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+
+[KbssIdd_UmdfInstall]
+UmdfLibraryVersion=$UMDFVERSION$
+ServiceBinary=%13%\kbss_idd.dll
+UmdfExtensions=IddCx0102
+
+[DestinationDirs]
+UMDriverCopy=13
+
+[UMDriverCopy]
+kbss_idd.dll
+
+[Strings]
+ManufacturerName="Castro Labs"
+DiskName="KB STUDIO SCREEN - instalacion del driver"
+DeviceName="KB STUDIO SCREEN - pantallas virtuales"
+REG_MULTI_SZ=0x00010000
+REG_SZ=0x00000000

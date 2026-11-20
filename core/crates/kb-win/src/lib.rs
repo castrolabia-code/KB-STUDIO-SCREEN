@@ -10,6 +10,8 @@ pub mod dpapi;
 #[cfg(windows)]
 pub mod encode;
 #[cfg(windows)]
+pub mod idd;
+#[cfg(windows)]
 pub mod input;
 #[cfg(windows)]
 pub mod monitors;

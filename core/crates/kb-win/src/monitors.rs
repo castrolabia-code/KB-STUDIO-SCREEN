@@ -47,9 +47,15 @@ fn friendly_names() -> HashMap<String, (String, bool)> {
             if DisplayConfigGetDeviceInfo(&mut src.header) == 0 && DisplayConfigGetDeviceInfo(&mut tgt.header) == 0 {
                 let name = wstr(&tgt.monitorFriendlyDeviceName);
                 let tech = p.targetInfo.outputTechnology;
-                let is_virtual = tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_WIRED
-                    || tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL
-                    || tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_OTHER;
+                // Nuestro adaptador virtual se reconoce por la ruta PnP del adaptador.
+                let mut ad = DISPLAYCONFIG_ADAPTER_NAME::default();
+                ad.header.r#type = DISPLAYCONFIG_DEVICE_INFO_GET_ADAPTER_NAME;
+                ad.header.size = std::mem::size_of::<DISPLAYCONFIG_ADAPTER_NAME>() as u32;
+                ad.header.adapterId = p.targetInfo.adapterId;
+                let ours = DisplayConfigGetDeviceInfo(&mut ad.header) == 0 && wstr(&ad.adapterDevicePath).to_lowercase().contains("kbssidd");
+                let is_virtual = ours
+                    || tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_WIRED
+                    || tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL;
                 out.insert(wstr(&src.viewGdiDeviceName).to_uppercase(), (name, is_virtual));
             }
         }

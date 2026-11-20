@@ -84,3 +84,73 @@ jobs:
         with:
           name: kb-studio-screen-apk
           path: android/app/build/outputs/apk/**/*.apk
+
+  driver:
+    # Compila el driver IddCx con el WDK de NuGet, lo firma con un certificado de
+    # PRUEBA efímero y lo instala en el runner (que tiene "Test Mode" activo) para
+    # verificar que Windows reconoce, captura y retira los monitores virtuales.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Restore WDK/SDK (NuGet)
+        working-directory: driver/kbss-idd
+        run: nuget restore packages.config -PackagesDirectory packages
+      - name: Build driver
+        working-directory: driver/kbss-idd
+        run: msbuild kbss_idd.vcxproj /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+      - name: Test-sign and install driver
+        shell: pwsh
+        working-directory: driver/kbss-idd
+        run: |
+          $ErrorActionPreference = 'Stop'
+          bcdedit /enum '{current}' | Select-String -Pattern 'testsigning'
+          $pkg = Get-ChildItem -Recurse -Filter kbss_idd.inf -Path x64 | Select-Object -First 1
+          $dir = $pkg.DirectoryName
+          Write-Host "Paquete: $dir"; Get-ChildItem $dir
+          $inf2cat = Get-ChildItem -Recurse -Filter Inf2Cat.exe -Path packages | Where-Object { $_.FullName -match 'x86|x64' } | Select-Object -First 1
+          $signtool = Get-ChildItem -Recurse -Filter signtool.exe -Path packages, "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\x64\\' } | Select-Object -First 1
+          if (-not (Test-Path "$dir\kbss_idd.cat")) { & $inf2cat.FullName /driver:$dir /os:10_X64 /uselocaltime; if ($LASTEXITCODE) { throw "Inf2Cat" } }
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=KBSS CI Test (efimero)' -CertStoreLocation Cert:\LocalMachine\My -NotAfter (Get-Date).AddDays(1)
+          foreach ($store in 'Root', 'TrustedPublisher') {
+            $s = New-Object System.Security.Cryptography.X509Certificates.X509Store($store, 'LocalMachine'); $s.Open('ReadWrite'); $s.Add($cert); $s.Close()
+          }
+          & $signtool.FullName sign /fd sha256 /sm /s My /sha1 $cert.Thumbprint "$dir\kbss_idd.dll"; if ($LASTEXITCODE) { throw "sign dll" }
+          if (Test-Path "$dir\kbss_idd.cat") { Remove-Item "$dir\kbss_idd.cat" }
+          & $inf2cat.FullName /driver:$dir /os:10_X64 /uselocaltime; if ($LASTEXITCODE) { throw "Inf2Cat" }
+          & $signtool.FullName sign /fd sha256 /sm /s My /sha1 $cert.Thumbprint "$dir\kbss_idd.cat"; if ($LASTEXITCODE) { throw "sign cat" }
+          pnputil /add-driver "$dir\kbss_idd.inf" /install
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 3010) { throw "pnputil $LASTEXITCODE" }
+          New-Item -ItemType Directory -Force ../../dist-driver | Out-Null
+          Copy-Item "$dir\*" ../../dist-driver/
+      - name: Create virtual adapter (installer step, admin)
+        working-directory: core
+        run: |
+          cargo build --release -p kb-engine
+          ./target/release/kbss-engine.exe driver create-adapter
+          Start-Sleep -Seconds 5
+          pnputil /enum-devices /class Display
+      - name: Real virtual monitor test (as the engine would, via IOCTL)
+        working-directory: core
+        env:
+          KBSS_IDD_TEST: "1"
+        run: cargo test --release -p kb-win --test idd_real -- --nocapture --test-threads=1
+      - name: Remove adapter and driver (clean uninstall)
+        if: always()
+        working-directory: core
+        shell: pwsh
+        run: |
+          ./target/release/kbss-engine.exe driver remove-adapter
+          pnputil /enum-drivers | Select-String -Context 0,6 'kbss_idd' 
+          $oem = (pnputil /enum-drivers | Select-String -Context 1,0 'kbss_idd.inf' | ForEach-Object { ($_.Context.PreContext[0] -split ':\s+')[1] }) | Select-Object -First 1
+          if ($oem) { pnputil /delete-driver $oem /uninstall /force }
+          pnputil /enum-devices /class Display
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kbss-idd-driver-test-signed
+          path: dist-driver/
