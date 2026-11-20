@@ -27,9 +27,16 @@ Antes de cada entrega se generará el listado completo de dependencias transitiv
 
 | Componente | Uso | Licencia | Notas |
 |---|---|---|---|
+| `mdns-sd` | anuncio mDNS del host | MIT / Apache-2.0 | En uso desde Fase 1 |
+| `qrcode` | QR en la consola del host | MIT / Apache-2.0 | En uso desde Fase 1 |
+| `if-addrs` | direcciones de red local | MIT / BSD-3-Clause | En uso desde Fase 1 |
+| `jni` | puente Rust ↔ Kotlin | MIT / Apache-2.0 | En uso desde Fase 1 |
+| `zxing-android-embedded` 4.3.0 | lector de QR en Android | Apache-2.0 | En uso desde Fase 1 |
+| AndroidX / Jetpack Compose (BOM 2025.06.00) | UI Android | Apache-2.0 | En uso desde Fase 1 |
+| WDK/SDK NuGet 10.0.28000.2526 | compilar el driver | EULA de Microsoft (herramienta de build, no se redistribuye) | En uso desde Fase 2 |
 | Tauri 2 | UI del host | MIT / Apache-2.0 | |
 | WebView2 Runtime (Microsoft) | motor de la UI | Redistribuible gratuito | Preinstalado en Win10/11 actuales |
-| Microsoft Windows-driver-samples (`IddSampleDriver`) | base del driver | MIT | Requiere aprobación (B-03) |
+| Microsoft Windows-driver-samples (`IddSampleDriver`) | base del driver `driver/kbss-idd` | **MS-PL** (corrección: en la Fase 0 figuraba MIT por error) | Permite uso comercial y distribuir binarios bajo licencia propia; el código fuente derivado conserva el aviso MS-PL (`driver/kbss-idd/LICENSE-MS-PL.txt`) |
 | WDK + Visual Studio Build Tools/Community | compilar el driver | EULA gratuita de Microsoft | Para uso comercial con equipos grandes, VS Community tiene límites: usar Build Tools o licencia Professional |
 | Media Foundation, DXGI, D3D11 | captura y codificación | Parte de Windows | Sin regalías de códec propias |
 | Kotlin, AndroidX, Jetpack Compose, CameraX | app Android | Apache-2.0 | |
