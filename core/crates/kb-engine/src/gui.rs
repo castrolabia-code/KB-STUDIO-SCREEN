@@ -21,6 +21,16 @@ enum UiEvent {
 }
 
 static PROXY: OnceLock<EventLoopProxy<UiEvent>> = OnceLock::new();
+/// Motivo por el que no se pudo crear la ventana (para diagnóstico).
+static LAST_ERROR: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+pub fn last_error() -> String {
+    LAST_ERROR.lock().unwrap().clone()
+}
+
+fn fail(msg: String) {
+    *LAST_ERROR.lock().unwrap() = msg;
+}
 
 /// Muestra (o trae al frente) la ventana. Devuelve false si no hay ventana propia.
 pub fn request_show() -> bool {
@@ -73,7 +83,8 @@ pub fn spawn(url: String, data_dir: PathBuf, show_now: bool) -> bool {
             .build(&event_loop)
         {
             Ok(w) => w,
-            Err(_) => {
+            Err(e) => {
+                fail(format!("ventana: {e}"));
                 let _ = tx.send(false);
                 return;
             }
@@ -88,7 +99,8 @@ pub fn spawn(url: String, data_dir: PathBuf, show_now: bool) -> bool {
             .build(&window);
         let webview = match webview {
             Ok(w) => w,
-            Err(_) => {
+            Err(e) => {
+                fail(format!("WebView2: {e}"));
                 let _ = tx.send(false);
                 return;
             }
@@ -116,7 +128,11 @@ pub fn spawn(url: String, data_dir: PathBuf, show_now: bool) -> bool {
             }
         });
     });
-    rx.recv_timeout(std::time::Duration::from_secs(20)).unwrap_or(false)
+    let ok = rx.recv_timeout(std::time::Duration::from_secs(20)).unwrap_or(false);
+    if !ok && last_error().is_empty() {
+        fail("la ventana no respondió a tiempo".into());
+    }
+    ok
 }
 
 /// Pide a la instancia que ya corre que muestre su ventana (POST /api/show).

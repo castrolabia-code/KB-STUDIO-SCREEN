@@ -193,10 +193,10 @@ impl Panel {
             (Method::Post, "/api/show") => {
                 // Otra copia del programa pide mostrar la ventana.
                 #[cfg(windows)]
-                let shown = crate::gui::request_show();
+                let (shown, err) = (crate::gui::request_show(), crate::gui::last_error());
                 #[cfg(not(windows))]
-                let shown = false;
-                json_resp(json!({"ok": true, "shown": shown}), 200)
+                let (shown, err) = (false, String::new());
+                json_resp(json!({"ok": true, "shown": shown, "error": err}), 200)
             }
             (Method::Post, "/api/quit") => {
                 // Cerrar el programa desde el panel: responde y sale enseguida.

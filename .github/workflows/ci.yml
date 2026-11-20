@@ -79,7 +79,9 @@ jobs:
           $panel = Get-Content "$env:LOCALAPPDATA\CastroLabs\KBStudioScreen\panel.url"
           $tok = ($panel -split 't=')[1]
           $r = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:47801/api/show -Headers @{ 'X-KBSS-Token' = $tok } -Body '{}' -ContentType 'application/json'
-          Write-Host "Ventana propia WebView2: shown=$($r.shown)"
+          Write-Host "Ventana propia WebView2: shown=$($r.shown) error=$($r.error)"
+          $wv = Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' -ErrorAction SilentlyContinue
+          Write-Host "Runtime WebView2 instalado: $($wv.pv)"
           if (-not $r.shown) { throw "no se creó la ventana propia (WebView2)" }
           Stop-Process -Id $p.Id -Force
           Start-Process "$dir\Desinstalar.exe" -ArgumentList '/S', "_?=$dir" -Wait
