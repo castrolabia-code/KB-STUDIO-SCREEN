@@ -77,5 +77,7 @@
   <!-- InfVerif: el paquete NuGet no incluye la versión x86 que cargan los targets.
        Con el WDK instalado (MSI/EWDK) puede ejecutarse con KBSS_INFVERIF=true.
        PENDIENTE: validar el INF con infverif /u en una instalación completa del WDK. -->
-  <Target Name="InfVerif" Condition="'$(KBSS_INFVERIF)' == 'true'" DependsOnTargets="" />
+  <Target Name="InfVerif" AfterTargets="StampInf" BeforeTargets="PreBuildEvent">
+    <Message Importance="High" Text="InfVerif omitido (WDK NuGet sin InfVerif x86). PENDIENTE: infverif /u con el WDK completo." />
+  </Target>
 </Project>
