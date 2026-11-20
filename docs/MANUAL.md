@@ -1,5 +1,5 @@
 # KB STUDIO SCREEN — Manual de uso
-**by Castro Labs** · versión 0.7
+**by Castro Labs** · versión 0.8
 
 KB STUDIO SCREEN convierte hasta **tres teléfonos o tablets Android** en pantallas de tu PC con Windows. Desde ellos podés **ver** cualquier monitor y **controlar con el dedo** el programa que tengas abierto (por ejemplo, los faders del mixer de Reason). También sirve para mostrarle **la letra al cantante** en una tablet.
 
@@ -25,7 +25,7 @@ Funciona sólo en tu red local: sin Internet, sin cuentas y sin suscripciones. *
 ## 2. Primer uso
 
 1. **La PC y los dispositivos tienen que estar en la misma red Wi-Fi** (mejor 5 GHz). Si la PC va por cable al mismo router, también sirve. Evitá las redes de "invitados": suelen aislar los equipos entre sí.
-2. Abrí **KB Studio Screen** en la PC (menú Inicio). Se abre la **ventana del panel de control**. El motor queda trabajando en segundo plano aunque cierres esa ventana; para volver a verla, abrí KB Studio Screen otra vez desde el menú Inicio. Para apagarlo del todo usá el botón **Cerrar KB Studio Screen** (arriba a la derecha del panel).
+2. Abrí **KB Studio Screen** en la PC (menú Inicio). Se abre **su ventana** (el panel de control), como cualquier programa. Si cerrás la ventana, el programa sigue trabajando en segundo plano y los dispositivos siguen conectados; para volver a verla, abrí KB Studio Screen otra vez desde el menú Inicio. Para apagarlo del todo usá el botón **Cerrar KB Studio Screen** (arriba a la derecha del panel).
 3. En el dispositivo abrí la app y emparejalo de una de estas dos formas:
    - **QR:** en el panel tocá **Mostrar QR nuevo** y en la app **Escanear QR**.
    - **PIN:** en la app tocá tu PC en la lista "PCs en tu red"; en el panel aparece un **PIN de 6 dígitos** que escribís en el dispositivo.

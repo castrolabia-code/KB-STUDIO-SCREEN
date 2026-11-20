@@ -27,6 +27,9 @@ Antes de cada entrega se generará el listado completo de dependencias transitiv
 
 | Componente | Uso | Licencia | Notas |
 |---|---|---|---|
+| `wry` / `tao` | ventana propia del programa (WebView2) | MIT o Apache-2.0 / Apache-2.0 | En uso desde 0.8.0 |
+| `WebView2Loader.dll` (Microsoft) | cargador de WebView2, junto al ejecutable | Licencia del SDK de WebView2 (redistribuible con la aplicación) | En uso desde 0.8.0; el *runtime* WebView2 viene con Windows 10/11 |
+| `winresource` | ícono y datos de versión del .exe (sólo al compilar) | MIT | En uso desde 0.8.0 |
 | `mdns-sd` | anuncio mDNS del host | MIT / Apache-2.0 | En uso desde Fase 1 |
 | `qrcode` | QR en la consola del host | MIT / Apache-2.0 | En uso desde Fase 1 |
 | `if-addrs` | direcciones de red local | MIT / BSD-3-Clause | En uso desde Fase 1 |

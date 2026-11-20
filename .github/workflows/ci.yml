@@ -75,6 +75,12 @@ jobs:
           try { Invoke-WebRequest http://127.0.0.1:47801/ -UseBasicParsing | Out-Null; throw "el panel respondió sin token" }
           catch { if ($_.Exception.Response.StatusCode.value__ -ne 403) { throw "esperaba 403: $_" } }
           Write-Host "Motor instalado OK: UDP 47800 abierto; panel 127.0.0.1:47801 rechaza sin token (403)."
+          # Ventana propia (WebView2): se pide mostrarla y debe confirmar que existe.
+          $panel = Get-Content "$env:LOCALAPPDATA\CastroLabs\KBStudioScreen\panel.url"
+          $tok = ($panel -split 't=')[1]
+          $r = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:47801/api/show -Headers @{ 'X-KBSS-Token' = $tok } -Body '{}' -ContentType 'application/json'
+          Write-Host "Ventana propia WebView2: shown=$($r.shown)"
+          if (-not $r.shown) { throw "no se creó la ventana propia (WebView2)" }
           Stop-Process -Id $p.Id -Force
           Start-Process "$dir\Desinstalar.exe" -ArgumentList '/S', "_?=$dir" -Wait
           Remove-Item "$dir\Desinstalar.exe" -ErrorAction SilentlyContinue

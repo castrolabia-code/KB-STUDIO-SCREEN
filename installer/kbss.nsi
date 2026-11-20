@@ -10,7 +10,7 @@ Unicode true
 
 !define APP "KB Studio Screen"
 !define COMPANY "Castro Labs"
-!define VERSION "0.7.1"
+!define VERSION "0.8.0"
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\KBStudioScreen"
 !define PORT "47800"
 
@@ -68,6 +68,8 @@ Section "${APP} (requerido)" SecMain
 
   SetOutPath "$INSTDIR"
   File "..\descargas\kbss-engine.exe"
+  ; Cargador de WebView2 (Microsoft, redistribuible) para la ventana propia del programa.
+  File "..\descargas\WebView2Loader.dll"
   File "..\descargas\kb-probe-win.exe"
   File "kbss.ico"
   File "LICENCIAS.txt"
@@ -133,6 +135,7 @@ Section "Uninstall"
   RMDir /r "$SMPROGRAMS\${APP}"
 
   Delete "$INSTDIR\kbss-engine.exe"
+  Delete "$INSTDIR\WebView2Loader.dll"
   Delete "$INSTDIR\kb-probe-win.exe"
   Delete "$INSTDIR\kbss.ico"
   Delete "$INSTDIR\LICENCIAS.txt"

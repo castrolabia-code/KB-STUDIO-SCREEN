@@ -98,6 +98,8 @@ impl TrustPersistence for FilePersist {
 // ------------------------------------------------------------ consola
 
 mod app_window;
+#[cfg(windows)]
+mod gui;
 mod profiles;
 mod ui;
 mod web;
@@ -224,7 +226,9 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
         Err(e) => {
             // Ya hay una copia funcionando: se reabre su ventana y se sale.
             if let Ok(url) = std::fs::read_to_string(app_window::url_file(&Store::open().dir)) {
-                app_window::open_panel(url.trim());
+                if !gui::ask_running_instance_to_show(url.trim()) {
+                    app_window::open_panel(url.trim());
+                }
                 std::process::exit(0);
             }
             eprintln!("No se pudo abrir el puerto UDP {port}: {e}\n¿Hay otra copia de kbss-engine abierta?");
@@ -296,7 +300,9 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     });
     println!("Panel de control: {url}");
     let _ = std::fs::write(app_window::url_file(&Store::open().dir), &url);
-    if std::env::var("KBSS_NO_BROWSER").is_err() && !std::env::args().any(|a| a == "--sin-navegador") {
+    let show_now = std::env::var("KBSS_NO_BROWSER").is_err() && !std::env::args().any(|a| a == "--sin-navegador");
+    // Ventana propia (WebView2). Si no se puede, ventana de Edge como respaldo.
+    if !gui::spawn(url.clone(), Store::open().dir, show_now) && show_now {
         app_window::open_panel(&url);
     }
     // Sin ventana negra: el motor trabaja oculto y se maneja desde el panel.

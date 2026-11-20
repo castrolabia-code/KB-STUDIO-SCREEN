@@ -1,4 +1,4 @@
-# 07 — Cierre del proyecto (versión 0.7.0)
+# 07 — Cierre del proyecto (versión 0.8.0)
 
 **KB STUDIO SCREEN — by Castro Labs** · 2026-11-20
 
@@ -10,7 +10,8 @@ Este documento contrasta el producto entregado con los **criterios de aceptació
 |---|---|
 | Instalador de Windows x64 (con regla de firewall acotada, accesos, desinstalación limpia) | `descargas/KBStudioScreen-Setup.exe` |
 | App Android 10+ (firmada con clave de prueba) | `descargas/KBStudioScreen.apk` |
-| Motor portable y diagnóstico | `descargas/kbss-engine.exe`, `descargas/kb-probe-win.exe` |
+| Motor portable y diagnóstico | `descargas/kbss-engine.exe` (+ `WebView2Loader.dll` al lado), `descargas/kb-probe-win.exe` |
+| Ventana propia del programa (WebView2), sin navegador | `core/crates/kb-engine/src/gui.rs` |
 | Driver de pantallas virtuales (firma de prueba) | `driver/kbss-idd/` (se compila e instala en CI) |
 | Manual de uso | `docs/MANUAL.md` (también dentro del instalador) |
 | Código fuente, pruebas, CI | este repositorio; `.github/workflows/ci.yml` |
