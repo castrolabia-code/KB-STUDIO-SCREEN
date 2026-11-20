@@ -167,3 +167,60 @@ jobs:
         with:
           name: kbss-idd-driver-test-signed
           path: dist-driver/
+
+  android-e2e:
+    # La app REAL en un emulador Android 10 (API 29, mínimo soportado) contra el
+    # host de demostración: JNI + QUIC + emparejamiento QR + MediaCodec + toques.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install NDK and cargo-ndk
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" > /dev/null
+          cargo install cargo-ndk --locked
+      - name: Build APKs (app + instrumented tests)
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest
+      - name: Start demo host
+        run: |
+          cargo build --release -p kb-session --example demo_host --manifest-path core/Cargo.toml
+          nohup ./core/target/release/examples/demo_host core/crates/kb-session/examples/testdata/testsrc_720p.h264 47800 10.0.2.2 qr.txt > demo.log 2>&1 &
+          sleep 2
+          base64 -w0 qr.txt > qr.b64
+      - name: Run on Android 10 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: default
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: cd android && ./gradlew --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.kbssQrB64=$(cat ../qr.b64)
+      - name: Verify host received the touches
+        if: always()
+        run: |
+          cat demo.log
+          grep -q "APROBADO" demo.log
+          grep -q "INJECT Button" demo.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-e2e-report
+          path: |
+            android/app/build/reports/androidTests/
+            demo.log
