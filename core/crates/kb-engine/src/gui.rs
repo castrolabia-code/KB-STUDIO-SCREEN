@@ -32,9 +32,20 @@ fn fail(msg: String) {
     *LAST_ERROR.lock().unwrap() = msg;
 }
 
-/// Muestra (o trae al frente) la ventana. Devuelve false si no hay ventana propia.
+/// Pedido de mostrar llegado antes de que la ventana termine de crearse.
+static PENDING_SHOW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Muestra (o trae al frente) la ventana. Si todavía se está creando, el pedido
+/// queda anotado y se cumple apenas esté lista. Devuelve true si la ventana
+/// ya existe y recibió el pedido.
 pub fn request_show() -> bool {
-    PROXY.get().is_some_and(|p| p.send_event(UiEvent::Show).is_ok())
+    match PROXY.get() {
+        Some(p) => p.send_event(UiEvent::Show).is_ok(),
+        None => {
+            PENDING_SHOW.store(true, std::sync::atomic::Ordering::SeqCst);
+            false
+        }
+    }
 }
 
 /// Ícono 64×64 dibujado en código: barras de nivel azules y una ámbar.
@@ -107,7 +118,7 @@ pub fn spawn(url: String, data_dir: PathBuf, show_now: bool) -> bool {
         };
         let _ = PROXY.set(event_loop.create_proxy());
         let _ = tx.send(true);
-        if show_now {
+        if show_now || PENDING_SHOW.swap(false, std::sync::atomic::Ordering::SeqCst) {
             window.set_visible(true);
             window.set_focus();
         }
