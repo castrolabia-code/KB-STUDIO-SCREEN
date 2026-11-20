@@ -60,4 +60,7 @@
     <string name="lyrics_bigger">Letra más grande</string>
     <string name="lyrics_contrast">Cambiar contraste</string>
     <string name="lyrics_bad_pdf">No se pudo abrir el PDF.</string>
+    <string name="bg_photo">Foto de fondo</string>
+    <string name="bg_pick">Elegir foto propia</string>
+    <string name="bg_remove">Volver a la imagen del estudio</string>
 </resources>

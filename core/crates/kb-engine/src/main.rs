@@ -279,6 +279,7 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
         locked: std::sync::atomic::AtomicBool::new(false),
         profiles: std::sync::Mutex::new(profiles::Profiles::load(&Store::open().dir.join("profiles.json"))),
         profiles_path: Store::open().dir.join("profiles.json"),
+        bg_path: Store::open().dir.join("background.img"),
     });
     let url = panel.url();
     let p2 = panel.clone();

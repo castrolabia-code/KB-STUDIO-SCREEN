@@ -10,6 +10,6 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
-    <color name="graphite">#FF120A24</color>
-    <color name="orange">#FFFF2E88</color>
+    <color name="graphite">#FF0D1015</color>
+    <color name="orange">#FF3D8BFF</color>
 </resources>

@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícono propio: sol de atardecer con franjas sobre una pantalla, acentos neón. -->
+<!-- Ícono propio: barras de nivel (vúmetro) celestes sobre el frente de un equipo. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:pathData="M54,30 a20,20 0 1,1 -0.01,0 z">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="linear" android:startX="54" android:startY="30" android:endX="54" android:endY="70"
-                android:startColor="#FFFFE08A" android:centerColor="#FFFF8A3D" android:endColor="#FFFF2E88" />
-        </aapt:attr>
-    </path>
-    <path android:fillColor="#FF120A24" android:pathData="M30,52 h48 v2.5 h-48 z M30,58 h48 v3.5 h-48 z M30,64 h48 v5 h-48 z" />
-    <path android:fillColor="#00000000" android:strokeColor="#FF2EE6D6" android:strokeWidth="3"
-        android:pathData="M28,72 h52 M36,78 h36" />
+    <path android:fillColor="#FF1C222B" android:strokeColor="#FF38424F" android:strokeWidth="1.5"
+        android:pathData="M32,30 h44 a6,6 0 0 1 6,6 v36 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-36 a6,6 0 0 1 6,-6 z" />
+    <path android:fillColor="#FF3D8BFF" android:pathData="M38,68 h6 v-14 h-6 z M48,68 h6 v-22 h-6 z M68,68 h6 v-17 h-6 z" />
+    <path android:fillColor="#FFF2A54A" android:pathData="M58,68 h6 v-28 h-6 z" />
+    <path android:fillColor="#FF47D985" android:pathData="M74,36 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" />
 </vector>

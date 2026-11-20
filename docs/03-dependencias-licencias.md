@@ -44,8 +44,7 @@ Antes de cada entrega se generará el listado completo de dependencias transitiv
 | `jni` crate, `cargo-ndk` | puente Rust ↔ Kotlin | MIT / Apache-2.0 | |
 | Android `PdfRenderer` | PDF en el teleprompter | Parte de Android | |
 | PDFium (opcional, en el host) | miniaturas de PDF | BSD-3 / Apache-2.0 | Sólo si hace falta |
-| Anton (tipografía de títulos, `third_party/fonts/anton`) | panel y app | SIL OFL 1.1 | En uso desde 0.5.0; incrustada en el panel y en la APK. Licencia incluida |
-| Inter (tipografía) | UI | SIL OFL 1.1 | Permite embeberla en apps comerciales |
+| Inter (tipografía, `third_party/fonts/inter`) | panel y app | SIL OFL 1.1 | En uso desde 0.6.0; incrustada en el panel y en la APK. Licencia incluida |
 | WiX Toolset (instalador) | MSI | MS-RL | Sólo herramienta de build; no se distribuye código de WiX en el producto |
 
 ## 3. Costos posibles (todos opcionales para uso personal)
@@ -87,4 +86,4 @@ cd core && cargo build --release -p kb-probe-win --target x86_64-pc-windows-gnu
 Toolchain usada: Rust 1.97.0, target `x86_64-pc-windows-gnu`, MinGW-w64 GCC 13.2 (Ubuntu).
 
 ## Estética
-La estética "Vice nights" (0.5.0) está **inspirada** en el atardecer neón de Miami. No usa logos, tipografías, nombres, imágenes ni ningún otro recurso de terceros (incluido Rockstar Games / GTA): el sol, las palmeras y la grilla son dibujos propios hechos con CSS, SVG y Compose.
+La estética "Studio" (0.6.0) está inspirada en una sala de control de un estudio de grabación. La ilustración de fábrica (`design/estudio_kbss.svg`) es un dibujo original de Castro Labs. El usuario puede elegir una foto propia como fondo; esa foto queda sólo en su equipo y no se distribuye.

@@ -20,6 +20,7 @@ use tiny_http::{Header, Method, Request, Response, Server};
 const PAGE: &str = include_str!("panel.html");
 const MAX_SMALL: usize = 8 * 1024;
 const MAX_DOC: usize = 64 * 1024 * 1024;
+const MAX_BG: usize = 12 * 1024 * 1024;
 
 pub struct Panel {
     pub host: Host,
@@ -34,6 +35,8 @@ pub struct Panel {
     pub locked: AtomicBool,
     pub profiles: std::sync::Mutex<Profiles>,
     pub profiles_path: std::path::PathBuf,
+    /// Foto de fondo elegida por el usuario (queda sólo en esta PC).
+    pub bg_path: std::path::PathBuf,
 }
 
 pub fn new_token() -> String {
@@ -109,7 +112,11 @@ impl Panel {
             let _ = r.respond(Response::from_string("prohibido").with_status_code(403));
             return;
         }
-        let limit = if path == "/api/doc" { MAX_DOC } else { MAX_SMALL };
+        let limit = match path.as_str() {
+            "/api/doc" => MAX_DOC,
+            "/api/background" => MAX_BG,
+            _ => MAX_SMALL,
+        };
         if r.body_length().unwrap_or(0) > limit {
             let _ = r.respond(json_resp(json!({"error": "demasiado grande"}), 413));
             return;
@@ -159,6 +166,28 @@ impl Panel {
                 match action {
                     Some(a) => json_resp(json!({"ok": true, "sent": self.host.prompter(a)}), 200),
                     None => json_resp(json!({"error": "acción desconocida"}), 400),
+                }
+            }
+            (Method::Get, "/api/background") => match std::fs::read(&self.bg_path) {
+                Ok(b) => {
+                    let ct = image_type(&b);
+                    Response::from_data(b)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], ct.as_bytes()).unwrap())
+                        .with_header(Header::from_bytes(&b"Cache-Control"[..], &b"no-store"[..]).unwrap())
+                },
+                Err(_) => Response::from_data(Vec::new()).with_status_code(204),
+            },
+            (Method::Post, "/api/background") => {
+                if body.is_empty() {
+                    let _ = std::fs::remove_file(&self.bg_path);
+                    json_resp(json!({"ok": true, "removed": true}), 200)
+                } else if image_type(&body) == "application/octet-stream" {
+                    json_resp(json!({"error": "formato no admitido (JPG, PNG o WebP)"}), 400)
+                } else {
+                    match std::fs::write(&self.bg_path, &body) {
+                        Ok(_) => json_resp(json!({"ok": true}), 200),
+                        Err(e) => json_resp(json!({"error": e.to_string()}), 500),
+                    }
                 }
             }
             (Method::Post, "/api/slot") => {
@@ -279,6 +308,19 @@ impl Panel {
     }
 }
 
+/// Tipo de imagen por su firma (sólo JPG, PNG, WebP).
+fn image_type(b: &[u8]) -> &'static str {
+    if b.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        "image/jpeg"
+    } else if b.starts_with(b"\x89PNG") {
+        "image/png"
+    } else if b.len() > 12 && &b[0..4] == b"RIFF" && &b[8..12] == b"WEBP" {
+        "image/webp"
+    } else {
+        "application/octet-stream"
+    }
+}
+
 fn quality_key(q: QualityProfile) -> &'static str {
     match q {
         QualityProfile::Mixer => "mixer",
@@ -393,6 +435,7 @@ mod http_tests {
             locked: AtomicBool::new(false),
             profiles: std::sync::Mutex::new(Profiles::default()),
             profiles_path: std::env::temp_dir().join(format!("kbss_profiles_test_{port}.json")),
+            bg_path: std::env::var("KBSS_TEST_BG").map(std::path::PathBuf::from).unwrap_or_else(|_| std::env::temp_dir().join(format!("kbss_bg_test_{port}.bin"))),
         });
         let p2 = p.clone();
         std::thread::spawn(move || p2.serve().unwrap());

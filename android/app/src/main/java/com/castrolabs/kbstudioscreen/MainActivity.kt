@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
@@ -45,22 +47,28 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-// Paleta "Vice nights": atardecer neón (arte y nombres propios, sin marcas de terceros).
-val Graphite = Color(0xFF120A24)   // noche violeta
-val Panel = Color(0xFF24123F)
-val Metal = Color(0xFFC6B3D9)
-val TextHi = Color(0xFFFFF4FB)
-val Orange = Color(0xFFFF2E88)     // acento principal (rosa neón)
-val SunOrange = Color(0xFFFF8A3D)
-val Yellow = Color(0xFFFFD166)
-val Cyan = Color(0xFF2EE6D6)
-val Sunset = Brush.horizontalGradient(listOf(Color(0xFFFF2E88), Color(0xFFFF6A3D), Color(0xFFFFD166)))
-/** Títulos: Anton (OFL), en itálica sintética para el aire de afiche. */
-val Display = FontFamily(Font(R.font.anton))
+// Paleta "Studio": racks negros, celeste de estudio, displays LCD y LEDs de estado.
+val Graphite = Color(0xFF0D1015)   // fondo
+val Panel = Color(0xFF171C23)      // módulo
+val Panel2 = Color(0xFF1D232C)
+val Edge = Color(0xFF2A323D)
+val Metal = Color(0xFF8B96A5)      // texto secundario
+val TextHi = Color(0xFFE8EEF4)
+val Orange = Color(0xFF3D8BFF)     // acento principal: azul eléctrico de los LEDs del estudio
+val StudioBlue2 = Color(0xFF8CC2FF)
+val Amber = Color(0xFFF2A54A)      // luz cálida / madera
+val Lcd = Color(0xFF081425)
+val LcdText = Color(0xFF9CC9FF)
+val LedOn = Color(0xFF47D985)
+val LedWait = Color(0xFFF5B841)
+val Yellow = LedWait
+val Cyan = StudioBlue2
+/** Inter (SIL OFL 1.1): tipografía limpia y técnica. */
+val Display = FontFamily(Font(R.font.inter_regular, FontWeight.Normal), Font(R.font.inter_semibold, FontWeight.SemiBold), Font(R.font.inter_bold, FontWeight.Bold))
 
 private val KbColors = darkColorScheme(
-    primary = Orange, onPrimary = Color(0xFF1A0716), background = Graphite, surface = Panel,
-    onSurface = TextHi, onBackground = TextHi, secondary = Cyan, tertiary = Yellow, error = Color(0xFFFF5470),
+    primary = Orange, onPrimary = Color(0xFF04202F), background = Graphite, surface = Panel,
+    onSurface = TextHi, onBackground = TextHi, secondary = StudioBlue2, tertiary = LedWait, error = Color(0xFFFF5A5F),
 )
 
 class MainActivity : ComponentActivity() {
@@ -72,6 +80,28 @@ class MainActivity : ComponentActivity() {
     private val busy = mutableStateOf<String?>(null)
     private val error = mutableStateOf<String?>(null)
     private val pinFor = mutableStateOf<PendingPin?>(null)
+    // Foto de ambientación elegida por el usuario: queda sólo en este dispositivo.
+    private val bgFile by lazy { java.io.File(filesDir, "background.img") }
+    private val bgImage = mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+
+    private val pickBg = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) runCatching {
+            contentResolver.openInputStream(uri)?.use { inp -> bgFile.outputStream().use { inp.copyTo(it) } }
+            loadBg()
+        }
+    }
+
+    private fun loadBg() {
+        bgImage.value = runCatching {
+            if (!bgFile.exists()) return@runCatching null
+            // Decodificar reducida (ahorra memoria en tablets de 4 GB).
+            val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(bgFile.path, o)
+            var sample = 1
+            while (o.outWidth / sample > 1600) sample *= 2
+            android.graphics.BitmapFactory.decodeFile(bgFile.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
+        }.getOrNull()
+    }
 
     data class PendingPin(val handle: Long, val host: String, val port: Int)
 
@@ -91,6 +121,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         storage = Storage(this)
         saved.value = storage.hosts()
+        loadBg()
         setContent { MaterialTheme(colorScheme = KbColors) { Home() } }
     }
 
@@ -176,11 +207,18 @@ class MainActivity : ComponentActivity() {
         var nameEdit by remember { mutableStateOf(false) }
         val wide = LocalConfiguration.current.screenWidthDp >= 700
         Box(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1C0B38), Graphite, Color(0xFF0D0620))))
+            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF131922), Graphite)))
                 .systemBarsPadding()
         ) {
             Column(Modifier.fillMaxSize()) {
                 SunsetHero(onName = { nameEdit = true })
+                // Foto propia si el usuario eligió una; si no, la ilustración de estudio incluida.
+                (bgImage.value ?: androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.estudio_kbss)).let { img ->
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(if (wide) 200.dp else 140.dp).clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))) {
+                        androidx.compose.foundation.Image(img, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.matchParentSize())
+                        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x330D1015), Color(0xCC0D1015)))))
+                    }
+                }
             Column(Modifier.fillMaxSize().padding(horizontal = if (wide) 40.dp else 16.dp, vertical = 16.dp)) {
                 Spacer(Modifier.height(20.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -211,21 +249,42 @@ class MainActivity : ComponentActivity() {
         pinFor.value?.let { p -> PinDialog(onCancel = { NativeCore.close(p.handle); pinFor.value = null }) { submitPin(p, it) } }
     }
 
+    /** Cabecera: frente de rack con tornillos, logo de barras de nivel, título y dispositivo. */
     @Composable
     private fun SunsetHero(onName: () -> Unit) {
-        Box(Modifier.fillMaxWidth().height(190.dp)) {
-            SunsetScene(Modifier.matchParentSize())
-            TextButton(onClick = onName, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                Icon(Icons.Filled.Tablet, null, tint = TextHi)
-                Spacer(Modifier.width(6.dp))
-                Text(storage.deviceName, color = TextHi, maxLines = 1)
-            }
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                // El título se ajusta al ancho: entra completo en teléfonos chicos y crece en tablets.
-                val titleSize = (LocalConfiguration.current.screenWidthDp / 8.6f).coerceIn(28f, 64f).sp
-                PosterTitle("KB STUDIO SCREEN", titleSize)
-                Text(stringResource(R.string.brand).uppercase(), color = Cyan, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = 18.sp,
-                    style = LocalTextStyle.current.copy(shadow = Shadow(Color(0xFF140726), Offset(3f, 3f), 0f)))
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(12.dp), shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF1C222B), border = BorderStroke(1.dp, Color(0xFF38424F)),
+        ) {
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Screw(); Spacer(Modifier.width(12.dp))
+                LevelLogo(); Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    // Nombre: blanco, grueso y con sombreado profundo para máximo contraste.
+                    Text("KB STUDIO SCREEN", color = Color.White, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 21.sp, letterSpacing = 2.sp, maxLines = 1,
+                        style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 5f), 10f)))
+                    Text(stringResource(R.string.brand).uppercase(), color = Amber, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 3.sp,
+                        style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 3f), 6f)))
+                }
+                var bgMenu by remember { mutableStateOf(false) }
+                Box {
+                    IconButton({ bgMenu = true }, Modifier.size(44.dp)) { Icon(Icons.Filled.Image, stringResource(R.string.bg_photo), tint = Metal) }
+                    DropdownMenu(bgMenu, { bgMenu = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.bg_pick)) }, onClick = {
+                            bgMenu = false
+                            pickBg.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        })
+                        if (bgImage.value != null) DropdownMenuItem(text = { Text(stringResource(R.string.bg_remove)) }, onClick = {
+                            bgMenu = false; bgFile.delete(); loadBg()
+                        })
+                    }
+                }
+                TextButton(onClick = onName) {
+                    Icon(Icons.Filled.Tablet, null, tint = Metal, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(storage.deviceName, color = Metal, maxLines = 1, fontSize = 13.sp)
+                }
+                Spacer(Modifier.width(4.dp)); Screw()
             }
         }
     }
@@ -279,85 +338,62 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Título de afiche: blanco con contorno oscuro y sombra rosa desplazada. */
+/** Tornillo de rack. */
 @Composable
-fun PosterTitle(text: String, size: androidx.compose.ui.unit.TextUnit) {
-    Box {
-        Text(text, color = Color(0xFF140726), fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = size, modifier = Modifier.offset(5.dp, 5.dp))
-        Text(text, color = Orange, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = size, modifier = Modifier.offset(2.5.dp, 2.5.dp))
-        Text(text, color = Color.White, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = size)
+fun Screw() {
+    Box(Modifier.size(12.dp).clip(RoundedCornerShape(50)).background(Brush.radialGradient(listOf(Color(0xFF9AA5B3), Color(0xFF4B5563), Color(0xFF2B313A)))))
+}
+
+/** Logo: barras de nivel (vúmetro) en celeste. */
+@Composable
+fun LevelLogo() {
+    Canvas(Modifier.size(34.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF11161D)).border(1.dp, Color(0xFF38424F), RoundedCornerShape(8.dp))) {
+        val bars = listOf(0.30f, 0.48f, 0.60f, 0.42f)
+        val bw = size.width * 0.09f
+        bars.forEachIndexed { i, h ->
+            val x = size.width * (0.22f + i * 0.155f)
+            val top = size.height * (0.80f - h)
+            drawRoundRect(if (i == 2) Amber else Orange, Offset(x, top), androidx.compose.ui.geometry.Size(bw, size.height * 0.80f - top),
+                androidx.compose.ui.geometry.CornerRadius(2f, 2f))
+        }
     }
 }
 
-/** Escena de atardecer: cielo degradado, sol con franjas, grilla neón y palmeras (dibujo propio). */
+/** Display tipo LCD para datos técnicos. */
 @Composable
-fun SunsetScene(modifier: Modifier) {
-    Canvas(modifier) {
-        val w = size.width; val h = size.height; val horizon = h * 0.80f
-        drawRect(Brush.verticalGradient(listOf(Color(0xFF1A0838), Color(0xFF5B1A73), Color(0xFFC42D7A), Color(0xFFFF6B4A), Color(0xFFFFB35C)), endY = horizon), size = androidx.compose.ui.geometry.Size(w, horizon))
-        // Sol con franjas horizontales.
-        val r = h * 0.42f; val cx = w / 2; val cy = horizon - r * 0.15f
-        val sun = Brush.verticalGradient(listOf(Color(0xFFFFF1A8), Color(0xFFFFB347), Color(0xFFFF3D7F)), startY = cy - r, endY = cy + r)
-        clipRect(bottom = horizon) {
-            drawCircle(sun, r, Offset(cx, cy))
-            var y = cy + r * 0.05f; var gap = 3f
-            while (y < cy + r) { drawRect(Color(0xFFC42D7A).copy(alpha = 0.95f), Offset(cx - r, y), androidx.compose.ui.geometry.Size(2 * r, gap)); y += 14f; gap += 1.6f }
-        }
-        // Suelo con grilla en perspectiva.
-        drawRect(Brush.verticalGradient(listOf(Color(0xFF2A0F4A), Color(0xFF140726)), startY = horizon, endY = h), Offset(0f, horizon), androidx.compose.ui.geometry.Size(w, h - horizon))
-        val gridColor = Cyan.copy(alpha = 0.85f)
-        for (i in -12..12) drawLine(gridColor, Offset(cx + i * w * 0.02f, horizon), Offset(cx + i * w * 0.16f, h), 1.5f)
-        var t = 0.08f
-        while (t < 1f) { val yy = horizon + (h - horizon) * t * t; drawLine(gridColor, Offset(0f, yy), Offset(w, yy), 1.5f); t += 0.16f }
-        drawLine(Brush.horizontalGradient(listOf(Color(0xFFFF2E88), Color(0xFFFFD166))), Offset(0f, h - 2f), Offset(w, h - 2f), 4f)
-        // Palmeras.
-        palm(w * 0.07f, h, h * 0.95f, 1f); palm(w * 0.20f, h, h * 0.62f, -1f)
-        palm(w * 0.93f, h, h * 0.92f, -1f); palm(w * 0.81f, h, h * 0.58f, 1f)
-    }
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.palm(x: Float, base: Float, height: Float, lean: Float) {
-    val c = Color(0xFF140726)
-    val top = Offset(x + lean * height * 0.12f, base - height)
-    val trunk = androidx.compose.ui.graphics.Path().apply {
-        moveTo(x - height * 0.025f, base); quadraticTo(x + lean * height * 0.02f, base - height * 0.5f, top.x - height * 0.012f, top.y)
-        lineTo(top.x + height * 0.012f, top.y); quadraticTo(x + lean * height * 0.05f, base - height * 0.5f, x + height * 0.025f, base); close()
-    }
-    drawPath(trunk, c)
-    val fronds = listOf(-160f, -125f, -95f, -60f, -25f, 10f)
-    for (a in fronds) {
-        val rad = Math.toRadians(a.toDouble()); val len = height * 0.42f
-        val end = Offset(top.x + (kotlin.math.cos(rad) * len).toFloat(), top.y + (kotlin.math.sin(rad) * len * 0.7f).toFloat() + len * 0.25f)
-        val mid = Offset((top.x + end.x) / 2, minOf(top.y, end.y) - len * 0.18f)
-        val leaf = androidx.compose.ui.graphics.Path().apply {
-            moveTo(top.x, top.y); quadraticTo(mid.x, mid.y - len * 0.06f, end.x, end.y); quadraticTo(mid.x, mid.y + len * 0.10f, top.x, top.y + len * 0.04f); close()
-        }
-        drawPath(leaf, c)
-    }
+fun LcdText(text: String, modifier: Modifier = Modifier) {
+    Text(text, color = LcdText, fontFamily = FontFamily.Monospace, fontSize = 13.sp,
+        modifier = modifier.clip(RoundedCornerShape(6.dp)).background(Lcd).border(1.dp, Color(0xFF12303D), RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 6.dp))
 }
 
 @Composable
 fun Glass(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    // Vidrio violeta con borde neón rosado, sin perder contraste.
+    // Módulo de rack: superficie oscura con borde sutil.
     Surface(
-        modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
-        color = Panel.copy(alpha = 0.85f), border = BorderStroke(1.dp, Orange.copy(alpha = 0.28f)),
+        modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
+        color = Panel, border = BorderStroke(1.dp, Edge),
     ) { content() }
 }
 
 @Composable
-fun SectionTitle(t: String) = Text(t.uppercase(), color = Yellow, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = 22.sp,
-    style = LocalTextStyle.current.copy(shadow = Shadow(Color(0xFF140726), Offset(3f, 3f), 0f)))
+fun SectionTitle(t: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(width = 3.dp, height = 14.dp).clip(RoundedCornerShape(2.dp)).background(Orange))
+        Spacer(Modifier.width(10.dp))
+        Text(t.uppercase(), color = Metal, fontFamily = Display, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 2.sp)
+    }
+}
 
 @Composable
 fun BigButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, outlined: Boolean = false, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(16.dp)
-    val base = modifier.heightIn(min = 60.dp).clip(shape)
-    val styled = if (outlined) base.border(BorderStroke(1.5.dp, Cyan), shape).background(Color(0xFF140726).copy(alpha = 0.6f)) else base.background(Sunset)
+    val shape = RoundedCornerShape(10.dp)
+    val base = modifier.heightIn(min = 56.dp).clip(shape)
+    val styled = if (outlined) base.border(1.dp, Color(0xFF38424F), shape).background(Brush.verticalGradient(listOf(Color(0xFF262E38), Color(0xFF1E252E))))
+    else base.background(Brush.verticalGradient(listOf(Color(0xFF5A9DFF), Color(0xFF2F74E6))))
     Row(styled.clickable(onClick = onClick).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-        val fg = if (outlined) Cyan else Color(0xFF1A0716)
+        val fg = if (outlined) TextHi else Color.White
         Icon(icon, null, tint = fg); Spacer(Modifier.width(10.dp))
-        Text(label.uppercase(), color = fg, fontFamily = Display, fontStyle = FontStyle.Italic, fontSize = 20.sp)
+        Text(label, color = fg, fontFamily = Display, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
     }
 }
 
@@ -365,10 +401,12 @@ fun BigButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVect
 fun HostRow(name: String, addr: String, badge: String, paired: Boolean, onForget: (() -> Unit)? = null, onClick: () -> Unit) {
     Glass(Modifier.clickable(onClick = onClick)) {
         Row(Modifier.padding(horizontal = 18.dp, vertical = 16.dp).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Computer, null, tint = if (paired) Orange else Cyan, modifier = Modifier.size(30.dp))
-            Spacer(Modifier.width(14.dp))
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(if (paired) LedOn else LedWait))
+            Spacer(Modifier.width(12.dp))
+            Icon(Icons.Filled.Computer, null, tint = Orange, modifier = Modifier.size(26.dp))
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(name.uppercase(), color = TextHi, fontSize = 22.sp, fontFamily = Display, fontStyle = FontStyle.Italic)
+                Text(name, color = TextHi, fontSize = 17.sp, fontFamily = Display, fontWeight = FontWeight.SemiBold)
                 Text("$addr · $badge", color = Metal, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
             }
             if (onForget != null) IconButton(onForget, Modifier.size(48.dp)) { Icon(Icons.Filled.DeleteOutline, null, tint = Metal) }

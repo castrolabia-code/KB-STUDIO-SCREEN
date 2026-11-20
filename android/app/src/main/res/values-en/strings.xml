@@ -60,4 +60,7 @@
     <string name="lyrics_bigger">Bigger text</string>
     <string name="lyrics_contrast">Change contrast</string>
     <string name="lyrics_bad_pdf">Could not open the PDF.</string>
+    <string name="bg_photo">Background photo</string>
+    <string name="bg_pick">Choose your own photo</string>
+    <string name="bg_remove">Back to the studio image</string>
 </resources>
