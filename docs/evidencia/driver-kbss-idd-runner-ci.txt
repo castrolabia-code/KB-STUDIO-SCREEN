@@ -1,0 +1,17 @@
+Driver package added successfully.
+Published Name:         oem12.inf
+Adaptador virtual creado.
+Instance ID:                SWD\KbssIdd\KbssIdd
+test virtual_monitors_appear_are_capturable_and_disappear ... ANTES [("\\\\.\\DISPLAY1", "HyperVMonitor", Rect { x: 0, y: 0, w: 1024, h: 768 }, false)]
+DRIVER DriverInfo { protocol: 1, active_mask: 0, adapter_ready: true }
+OK monitor virtual 1280x800 visible para Windows en 252.312ms
+VIRTUAL "\\\\.\\DISPLAY2" 'KBSS Pantalla' en Rect { x: 1024, y: 0, w: 1280, h: 800 }
+OK primer frame del monitor virtual en 8.4742ms
+OK segundo monitor 2340x1080 en 254.25ms
+OK monitor ranura 0 retirado en 16.5548ms
+OK watchdog retiró los monitores en 6.2888613s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.84s
+Adaptador virtual quitado.
+Driver package uninstalled.
+Driver package deleted successfully.
+Instance ID:                SWD\KbssIdd\KbssIdd
