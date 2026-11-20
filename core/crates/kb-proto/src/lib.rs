@@ -15,7 +15,7 @@ use kb_geometry::{NormPoint, Rect, Rotation};
 use serde::{Deserialize, Serialize};
 
 pub const PROTO_MAJOR: u16 = 1;
-pub const PROTO_MINOR: u16 = 1;
+pub const PROTO_MINOR: u16 = 2;
 pub const ALPN: &[u8] = b"kbss/1";
 
 /// Tamaño máximo de un mensaje de control serializado.
@@ -226,7 +226,35 @@ pub enum Message {
     /// Cliente -> host: cambiar el perfil de calidad (Mezcla / Letras / Automático).
     /// Agregado al final del enum: compatible con clientes 1.0 que no lo envían.
     SetProfile { profile: QualityProfile },
+    /// Host -> cliente: fragmento de un documento para el visor del cantante.
+    /// Viaja cifrado por el canal de control; nunca pasa por la nube.
+    DocChunk { doc_id: u32, name: String, kind: DocKind, total: u32, offset: u32, data: Vec<u8> },
+    /// Host -> cliente: control del teleprompter.
+    Prompter { action: PrompterAction },
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DocKind {
+    Pdf,
+    Text,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PrompterAction {
+    NextPage,
+    PrevPage,
+    GoToPage(u16),
+    /// Velocidad de avance automático, 0 = detenido, 1..=10.
+    AutoScroll(u8),
+    /// true = el cantante no puede tocar los controles.
+    Lock(bool),
+    Close,
+}
+
+/// Tamaño máximo de un fragmento de documento (cabe en MAX_CONTROL_FRAME).
+pub const DOC_CHUNK: usize = 12 * 1024;
+/// Tamaño máximo de un documento.
+pub const MAX_DOC: u32 = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MonitorSummary {
@@ -300,6 +328,13 @@ impl Message {
                 }
             }
             ModeChangeRequest { mode } => check_mode(mode)?,
+            DocChunk { name, total, offset, data, .. } => {
+                check_name(name)?;
+                if data.len() > DOC_CHUNK || *total == 0 || *total > MAX_DOC || offset.checked_add(data.len() as u32).is_none_or(|e| e > *total) {
+                    return Err(ProtoError::Invalid("doc_chunk"));
+                }
+            }
+            Prompter { action: PrompterAction::AutoScroll(v) } if *v > 10 => return Err(ProtoError::Invalid("speed")),
             Input(InputEvent::Pointer(p)) if p.pointer_id >= MAX_POINTERS => {
                 return Err(ProtoError::Invalid("pointer_id"));
             }

@@ -70,6 +70,19 @@ Luego, abrí `kbss-engine.exe` normal (sin administrador) y en la tablet: barra 
 
 Para desinstalar: `kbss-engine.exe driver remove-adapter` y `pnputil /delete-driver oemNN.inf /uninstall` (el número `oemNN` lo muestra `pnputil /enum-drivers`).
 
+## D. Modo cantante (letras en la tablet)
+
+- [ ] **D1.** Emparejá la tablet del cantante en **solo ver** (en la PC respondé **v**).
+- [ ] **D2.** En la consola de la PC escribí `d ` seguido de la ruta del archivo, por ejemplo:
+  `d C:\Letras\Tema 1.pdf` (también sirve un `.txt`). Esperado: la letra aparece a pantalla completa en la tablet.
+- [ ] **D3.** En la tablet: botones de abajo → página siguiente/anterior, avance automático (▶ y velocidad −/+), contraste, tamaño de letra (en `.txt`).
+- [ ] **D4.** Desde la PC: `n` página siguiente, `b` anterior, `a 3` avance automático a velocidad 3 (`a 0` lo detiene).
+- [ ] **D5.** Bloqueo: escribí `k` en la PC → desaparecen los botones de la tablet (el cantante no puede tocar nada). `k` otra vez para desbloquear.
+- [ ] **D6.** `c` cierra la letra en la tablet (y se borra de la tablet).
+- [ ] **D7.** Mientras tanto, Reason sigue usable desde el teléfono o el mouse.
+
+Si no hay ningún dispositivo en "solo ver", la letra se envía a todos los conectados.
+
 ## Qué me tenés que mandar
 
 1. `kbss-probe-report.json`.

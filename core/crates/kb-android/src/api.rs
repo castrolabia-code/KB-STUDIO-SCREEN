@@ -63,6 +63,9 @@ pub fn err_code(e: &ClientError) -> String {
     format!("{code}|{e}")
 }
 
+/// (id, nombre, tipo, bytes, recibidos)
+type PartialDoc = (u32, String, DocKind, Vec<u8>, usize);
+
 pub struct Session {
     client: Arc<Client>,
     stage: Mutex<Stage>,
@@ -71,6 +74,10 @@ pub struct Session {
     dragging: AtomicBool,
     out: mpsc::UnboundedSender<Message>,
     closed: Arc<AtomicBool>,
+    /// Documento en recepción: (id, nombre, tipo, bytes, recibidos).
+    doc_rx: Mutex<Option<PartialDoc>>,
+    /// Documento completo, listo para que Kotlin lo tome (una sola vez).
+    doc_ready: Mutex<Option<Vec<u8>>>,
 }
 
 fn stage_json(s: &Stage) -> String {
@@ -175,6 +182,8 @@ pub fn connect(a: ConnectArgs) -> Result<Session, String> {
         dragging: AtomicBool::new(false),
         out: tx,
         closed,
+        doc_rx: Mutex::new(None),
+        doc_ready: Mutex::new(None),
     })
 }
 
@@ -224,9 +233,51 @@ impl Session {
             }
             Ok(Message::Error { code }) => json!({"type": "error", "code": format!("{code:?}")}).to_string(),
             Ok(Message::Pong { t_us }) => json!({"type": "pong", "t_us": t_us}).to_string(),
+            Ok(Message::DocChunk { doc_id, name, kind, total, offset, data }) => self.doc_chunk(doc_id, name, kind, total, offset, data),
+            Ok(Message::Prompter { action }) => {
+                let j = match action {
+                    PrompterAction::NextPage => json!({"action": "next"}),
+                    PrompterAction::PrevPage => json!({"action": "prev"}),
+                    PrompterAction::GoToPage(p) => json!({"action": "goto", "page": p}),
+                    PrompterAction::AutoScroll(v) => json!({"action": "auto", "speed": v}),
+                    PrompterAction::Lock(l) => json!({"action": "lock", "locked": l}),
+                    PrompterAction::Close => json!({"action": "close"}),
+                };
+                let mut j = j;
+                j["type"] = "prompter".into();
+                j.to_string()
+            }
             Ok(_) => json!({"type": "other"}).to_string(),
             Err(e) => json!({"type": "closed", "reason": err_code(&e)}).to_string(),
         }
+    }
+
+    fn doc_chunk(&self, id: u32, name: String, kind: DocKind, total: u32, offset: u32, data: Vec<u8>) -> String {
+        let mut g = self.doc_rx.lock().unwrap();
+        // Documento nuevo (o distinto): se descarta el anterior a medio recibir.
+        if g.as_ref().is_none_or(|(i, ..)| *i != id) {
+            *g = Some((id, name.clone(), kind, vec![0u8; total as usize], 0));
+        }
+        let (_, _, _, buf, got) = g.as_mut().unwrap();
+        let (o, e) = (offset as usize, offset as usize + data.len());
+        if e <= buf.len() {
+            buf[o..e].copy_from_slice(&data);
+            *got += data.len();
+        }
+        if *got >= buf.len() {
+            let (_, name, kind, buf, _) = g.take().unwrap();
+            let size = buf.len();
+            *self.doc_ready.lock().unwrap() = Some(buf);
+            let k = if kind == DocKind::Pdf { "pdf" } else { "text" };
+            json!({"type": "doc_ready", "name": name, "kind": k, "size": size}).to_string()
+        } else {
+            json!({"type": "doc_progress", "pct": (*got * 100 / buf.len().max(1))}).to_string()
+        }
+    }
+
+    /// Entrega el documento completo (y lo olvida: no queda copia en el núcleo).
+    pub fn take_document(&self) -> Option<Vec<u8>> {
+        self.doc_ready.lock().unwrap().take()
     }
 
     pub fn monitors_json(&self) -> String {

@@ -4,7 +4,7 @@
 //! Aprueba automáticamente con permiso de control. NO es un producto: sólo
 //! existe para probar el cliente sin una PC con Windows.
 //!
-//!   cargo run -p kb-session --example demo_host -- <archivo.h264> <puerto> <host-para-QR> <salida-qr.txt>
+//!   cargo run -p kb-session --example demo_host -- <archivo.h264> <puerto> <host-para-QR> <salida-qr.txt> [documento]
 
 use kb_geometry::{MonitorDesc, Rect, Topology};
 use kb_pairing::TrustStore;
@@ -138,6 +138,25 @@ async fn main() {
         Arc::new(NoPersist),
         TrustStore::default(),
     );
+    // Modo cantante: si se pasa un documento, se envía cada pocos segundos a
+    // los dispositivos conectados, con avance automático.
+    if let Some(doc) = a.get(5) {
+        let bytes = std::fs::read(doc).expect("leer documento");
+        let kind = if bytes.starts_with(b"%PDF") { kb_proto::DocKind::Pdf } else { kb_proto::DocKind::Text };
+        let name = std::path::Path::new(doc).file_name().unwrap().to_string_lossy().to_string();
+        let h = host.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_secs(4)).await;
+                if let Ok(n) = h.send_document(&name, kind, &bytes) {
+                    if n > 0 {
+                        println!("DOC enviado a {n}");
+                        h.prompter(kb_proto::PrompterAction::AutoScroll(3));
+                    }
+                }
+            }
+        });
+    }
     let qr = host.issue_qr(qr_host, port);
     std::fs::write(&qr_out, qr.to_uri()).unwrap();
     println!("QR escrito en {qr_out}");

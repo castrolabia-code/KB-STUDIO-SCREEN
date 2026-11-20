@@ -183,6 +183,7 @@ fn print_qr(host: &Host, ip: &str, port: u16) {
 
 fn help() {
     println!("Comandos: [q] QR nuevo  [l] dispositivos  [r N] revocar  [p N] cambiar permiso  [m] monitores  [w] rescatar ventanas  [h] ayuda  [x] salir");
+    println!("Cantante: [d RUTA] enviar letra (PDF o .txt)  [n] página siguiente  [b] anterior  [a N] avance automático 0-10  [k] bloquear/desbloquear  [c] cerrar letra");
 }
 
 fn host_name() -> String {
@@ -317,6 +318,7 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
     rt.spawn(async move { h.serve(endpoint).await });
 
     // Consola: las respuestas a aprobaciones tienen prioridad sobre los comandos.
+    let mut locked = false;
     let stdin = std::io::stdin();
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
@@ -343,6 +345,23 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
                 continue;
             }
             None => {}
+        }
+        // Comando "d": la ruta conserva mayúsculas y espacios.
+        if l.starts_with("d ") {
+            let path = line.trim()[2..].trim().trim_matches('"');
+            match std::fs::read(path) {
+                Ok(bytes) => {
+                    let name = std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+                    let kind = if bytes.starts_with(b"%PDF") { kb_proto::DocKind::Pdf } else { kb_proto::DocKind::Text };
+                    match host.send_document(&name, kind, &bytes) {
+                        Ok(0) => println!("  No hay dispositivos conectados."),
+                        Ok(n) => println!("  «{name}» enviado a {n} dispositivo(s) ({} KB).", bytes.len() / 1024),
+                        Err(e) => println!("  {e}"),
+                    }
+                }
+                Err(e) => println!("  No se pudo leer el archivo: {e}"),
+            }
+            continue;
         }
         let mut parts = l.split_whitespace();
         let cmd = parts.next().unwrap_or("");
@@ -383,6 +402,21 @@ fn run(platform: Arc<dyn kb_session::Platform>) {
             "w" => {
                 let n = kb_win::windows_rescue::rescue_offscreen_windows(&platform.topology());
                 println!("  Ventanas reubicadas: {n}");
+            }
+            "n" | "b" | "a" | "k" | "c" => {
+                use kb_proto::PrompterAction as P;
+                let action = match cmd {
+                    "n" => P::NextPage,
+                    "b" => P::PrevPage,
+                    "a" => P::AutoScroll(arg.unwrap_or(0).min(10) as u8),
+                    "k" => {
+                        locked = !locked;
+                        P::Lock(locked)
+                    }
+                    _ => P::Close,
+                };
+                let n = host.prompter(action);
+                println!("  Teleprompter: {action:?} → {n} dispositivo(s){}", if cmd == "k" { if locked { " (bloqueado)" } else { " (desbloqueado)" } } else { "" });
             }
             "x" => break,
             "" => {}

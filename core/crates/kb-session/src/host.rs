@@ -94,6 +94,8 @@ struct Inner {
     conns: Mutex<HashMap<Fingerprint, (u64, quinn::Connection)>>,
     /// Monitores virtuales vivos por dispositivo: (ranura, monitor, generación de sesión).
     extended: Mutex<HashMap<Fingerprint, (u8, MonitorDesc, u64)>>,
+    /// Cola de mensajes iniciados por el host (documentos, teleprompter) por sesión.
+    outboxes: Mutex<HashMap<Fingerprint, (u64, mpsc::UnboundedSender<Message>)>>,
 }
 
 /// Tiempo que se conserva un monitor virtual tras una desconexión, esperando
@@ -133,6 +135,7 @@ impl Host {
                 arbiter: InputArbiter::default(),
                 conns: Mutex::new(HashMap::new()),
                 extended: Mutex::new(HashMap::new()),
+                outboxes: Mutex::new(HashMap::new()),
             }),
         }
     }
@@ -167,6 +170,57 @@ impl Host {
         let ok = t.set_permission(fp, p);
         self.inner.persist.save(&t);
         ok
+    }
+
+    /// Destinatarios del modo cantante: sesiones en "solo ver"; si no hay
+    /// ninguna, todas las sesiones conectadas.
+    fn singer_targets(&self) -> Vec<mpsc::UnboundedSender<Message>> {
+        let trust = self.inner.trust.lock().unwrap();
+        let out = self.inner.outboxes.lock().unwrap();
+        let viewers: Vec<_> = out
+            .iter()
+            .filter(|(fp, _)| trust.get(fp).is_some_and(|d| d.permission == Permission::ViewOnly))
+            .map(|(_, (_, tx))| tx.clone())
+            .collect();
+        if viewers.is_empty() {
+            out.values().map(|(_, tx)| tx.clone()).collect()
+        } else {
+            viewers
+        }
+    }
+
+    /// Envía un documento (PDF o texto) al visor del cantante. Devuelve a
+    /// cuántos dispositivos se envió. El contenido nunca se registra en logs.
+    pub fn send_document(&self, name: &str, kind: DocKind, bytes: &[u8]) -> Result<usize, String> {
+        if bytes.is_empty() || bytes.len() as u64 > MAX_DOC as u64 {
+            return Err("documento vacío o demasiado grande (máx. 64 MB)".into());
+        }
+        let name: String = name.chars().filter(|c| !c.is_control()).take(MAX_NAME_LEN).collect();
+        let name = if name.is_empty() { "documento".to_string() } else { name };
+        let doc_id: u32 = rand::random();
+        let targets = self.singer_targets();
+        for tx in &targets {
+            for (i, chunk) in bytes.chunks(DOC_CHUNK).enumerate() {
+                let _ = tx.send(Message::DocChunk {
+                    doc_id,
+                    name: name.clone(),
+                    kind,
+                    total: bytes.len() as u32,
+                    offset: (i * DOC_CHUNK) as u32,
+                    data: chunk.to_vec(),
+                });
+            }
+        }
+        Ok(targets.len())
+    }
+
+    /// Control del teleprompter en los dispositivos del cantante.
+    pub fn prompter(&self, action: PrompterAction) -> usize {
+        let targets = self.singer_targets();
+        for tx in &targets {
+            let _ = tx.send(Message::Prompter { action });
+        }
+        targets.len()
     }
 
     /// Bucle de aceptación. No retorna mientras el endpoint esté abierto.
@@ -552,10 +606,33 @@ async fn run_session(
 
     let sink = inner.platform.input();
     let mut pressed = false;
+    // Lector en su propia tarea: así el bucle puede esperar a la vez mensajes
+    // del cliente y mensajes iniciados por el host sin cortar lecturas a medias.
+    let (itx, mut irx) = mpsc::channel::<Result<Message, TransportError>>(64);
+    tokio::spawn(async move {
+        loop {
+            let r = read_message(&mut rx).await;
+            let stop = r.is_err();
+            if itx.send(r).await.is_err() || stop {
+                break;
+            }
+        }
+    });
+    let (otx, mut orx) = mpsc::unbounded_channel::<Message>();
+    inner.outboxes.lock().unwrap().insert(peer, (gen, otx));
     let result = loop {
-        let msg = match read_message(&mut rx).await {
-            Ok(m) => m,
-            Err(e) => break Err(e.into()),
+        let msg = tokio::select! {
+            m = irx.recv() => match m {
+                Some(Ok(m)) => m,
+                Some(Err(e)) => break Err(e.into()),
+                None => break Ok(()),
+            },
+            Some(o) = orx.recv() => {
+                if let Err(e) = send(&mut tx, o).await {
+                    break Err(e);
+                }
+                continue;
+            }
         };
         let auth = authorize_inbound(&msg, &inner.trust.lock().unwrap(), &peer);
         if let Err(code) = auth {
@@ -685,6 +762,12 @@ async fn run_session(
         sink.inject(Injected::Button { p: kb_geometry::PointI { x: 0, y: 0 }, button: MouseButton::Left, down: false });
     }
     drop(video);
+    {
+        let mut out = inner.outboxes.lock().unwrap();
+        if out.get(&peer).is_some_and(|(g, _)| *g == gen) {
+            out.remove(&peer);
+        }
+    }
     inner.ui.event(HostEvent::Disconnected { slot, name });
     // Monitor virtual: se conserva EXTEND_GRACE por si el dispositivo vuelve.
     if inner.extended.lock().unwrap().get(&peer).is_some_and(|(_, _, g)| *g == gen) {

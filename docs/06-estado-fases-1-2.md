@@ -65,6 +65,15 @@ El driver está firmado con un certificado de **prueba** y sólo se probó en un
 
 **Duplicar no necesita el driver**, así que podés probar toda la Fase 1 ya.
 
+## Fase 4 — Modo cantante (adelantado)
+
+| Función | Estado | Evidencia |
+|---|---|---|
+| Envío de PDF / texto desde la PC al dispositivo en solo lectura (cifrado, LAN, fragmentos de 12 KB, máx. 64 MB) | PROBADO-LOCAL + CI | e2e `singer_receives_document…`: llega íntegro sólo al cantante |
+| Recepción y apertura del PDF con `PdfRenderer` en Android 10 | PROBADO-CI (emulador) | `EndToEndTest`: 2 páginas, texto dibujado |
+| Teleprompter: páginas, avance automático 0–10, contraste (3 temas, PDF invertido), tamaño de letra, bloqueo desde la PC, cierre con borrado del archivo | Implementado · **PENDIENTE** en la tablet EXO | Guía, sección D |
+| Comandos de consola `d`, `n`, `b`, `a N`, `k`, `c` | Implementado · **PENDIENTE** en tu PC | |
+
 ## Números de las pruebas
 - Rust: 37 pruebas en Linux (unitarias + integración + e2e), más 3 pruebas sobre Windows real (captura/codificación/entrada, DPAPI, driver). Clippy sin advertencias en Linux y Windows.
 - CI: 5 jobs (Linux, Windows, APK, driver en Windows, app en emulador Android 10), todos en verde.

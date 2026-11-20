@@ -50,4 +50,14 @@
     <string name="quality_mixer">Mezcla · respuesta rápida (30 fps)</string>
     <string name="quality_lyrics">Letras · máxima nitidez (10 fps)</string>
     <string name="quality_auto">Automático</string>
+    <string name="lyrics_close">Cerrar letra</string>
+    <string name="lyrics_prev">Página anterior</string>
+    <string name="lyrics_next">Página siguiente</string>
+    <string name="lyrics_slower">Más lento</string>
+    <string name="lyrics_auto">Avance automático</string>
+    <string name="lyrics_faster">Más rápido</string>
+    <string name="lyrics_smaller">Letra más chica</string>
+    <string name="lyrics_bigger">Letra más grande</string>
+    <string name="lyrics_contrast">Cambiar contraste</string>
+    <string name="lyrics_bad_pdf">No se pudo abrir el PDF.</string>
 </resources>

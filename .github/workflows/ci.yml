@@ -199,7 +199,7 @@ jobs:
       - name: Start demo host
         run: |
           cargo build --release -p kb-session --example demo_host --manifest-path core/Cargo.toml
-          nohup ./core/target/release/examples/demo_host core/crates/kb-session/examples/testdata/testsrc_720p.h264 47800 10.0.2.2 qr.txt > demo.log 2>&1 &
+          nohup ./core/target/release/examples/demo_host core/crates/kb-session/examples/testdata/testsrc_720p.h264 47800 10.0.2.2 qr.txt core/crates/kb-session/examples/testdata/letra_prueba.pdf > demo.log 2>&1 &
           sleep 2
           base64 -w0 qr.txt > qr.b64
       - name: Run on Android 10 emulator
@@ -217,6 +217,7 @@ jobs:
           cat demo.log
           grep -q "APROBADO" demo.log
           grep -q "INJECT Button" demo.log
+          grep -q "DOC enviado" demo.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

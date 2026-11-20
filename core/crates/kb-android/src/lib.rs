@@ -255,6 +255,16 @@ pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_extend(_env
     }
 }
 
+/// Documento del modo cantante ya recibido (o null).
+#[no_mangle]
+pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_takeDocument<'a>(env: JNIEnv<'a>, _c: JClass, h: jlong) -> JByteArray<'a> {
+    let null = JByteArray::from(JObject::null());
+    match session(h).and_then(|s| s.take_document()) {
+        Some(v) => env.byte_array_from_slice(&v).unwrap_or(null),
+        None => null,
+    }
+}
+
 #[no_mangle]
 pub extern "system" fn Java_com_castrolabs_kbstudioscreen_NativeCore_monitors(mut env: JNIEnv, _c: JClass, h: jlong) -> jstring {
     let j = session(h).map(|s| s.monitors_json()).unwrap_or_else(|| "[]".into());

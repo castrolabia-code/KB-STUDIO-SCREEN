@@ -50,4 +50,14 @@
     <string name="quality_mixer">Mixing · fast response (30 fps)</string>
     <string name="quality_lyrics">Lyrics · maximum sharpness (10 fps)</string>
     <string name="quality_auto">Automatic</string>
+    <string name="lyrics_close">Close lyrics</string>
+    <string name="lyrics_prev">Previous page</string>
+    <string name="lyrics_next">Next page</string>
+    <string name="lyrics_slower">Slower</string>
+    <string name="lyrics_auto">Auto scroll</string>
+    <string name="lyrics_faster">Faster</string>
+    <string name="lyrics_smaller">Smaller text</string>
+    <string name="lyrics_bigger">Bigger text</string>
+    <string name="lyrics_contrast">Change contrast</string>
+    <string name="lyrics_bad_pdf">Could not open the PDF.</string>
 </resources>

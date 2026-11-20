@@ -73,7 +73,33 @@ class EndToEndTest {
         assertTrue(NativeCore.touch(h, NativeCore.PHASE_DOWN, 640f, 400f))
         assertTrue(NativeCore.touch(h, NativeCore.PHASE_MOVE, 640f, 200f))
         assertTrue(NativeCore.touch(h, NativeCore.PHASE_UP, 640f, 200f))
-        Thread.sleep(500)
+        // Modo cantante: el host envía un PDF; debe llegar íntegro y abrirse con PdfRenderer.
+        var docEv: JSONObject? = null
+        val docDeadline = System.currentTimeMillis() + 20000
+        while (docEv == null && System.currentTimeMillis() < docDeadline) {
+            val ev = JSONObject(NativeCore.nextControl(h))
+            if (ev.optString("type") == "doc_ready") docEv = ev
+        }
+        assertTrue("no llegó el documento", docEv != null)
+        assertEquals("pdf", docEv!!.getString("kind"))
+        val bytes = NativeCore.takeDocument(h)!!
+        assertEquals(docEv.getInt("size"), bytes.size)
+        val f = java.io.File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "e2e.pdf")
+        f.writeBytes(bytes)
+        android.graphics.pdf.PdfRenderer(android.os.ParcelFileDescriptor.open(f, android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { r ->
+            assertEquals(2, r.pageCount)
+            r.openPage(0).use { p ->
+                val bmp = android.graphics.Bitmap.createBitmap(600, 850, android.graphics.Bitmap.Config.ARGB_8888)
+                bmp.eraseColor(android.graphics.Color.WHITE)
+                p.render(bmp, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                var dark = 0
+                for (y in 0 until 200 step 2) for (x in 0 until 600 step 2) if (bmp.getPixel(x, y) and 0xFF < 100) dark++
+                println("E2E pdf dark_pixels=$dark")
+                assertTrue("la página del PDF no tiene texto dibujado", dark > 50)
+            }
+        }
+        f.delete()
+        Thread.sleep(300)
         NativeCore.close(h)
         reader.close()
         thread.quitSafely()

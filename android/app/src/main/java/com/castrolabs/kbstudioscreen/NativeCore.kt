@@ -48,6 +48,8 @@ object NativeCore {
     @JvmStatic external fun setProfile(h: Long, profile: Int)
     /** Pide extender el escritorio con un monitor virtual (la PC confirma). */
     @JvmStatic external fun extend(h: Long)
+    /** Documento del modo cantante ya recibido (una sola vez), o null. */
+    @JvmStatic external fun takeDocument(h: Long): ByteArray?
     @JvmStatic external fun monitors(h: Long): String
     @JvmStatic external fun close(h: Long)
 }

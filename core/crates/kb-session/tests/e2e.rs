@@ -408,3 +408,40 @@ async fn profile_and_monitor_are_remembered_per_device() {
         _ => panic!(),
     }
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn singer_receives_document_and_prompter_but_producer_does_not() {
+    let r = rig(Some(Permission::Control));
+    let prod = Identity::generate().unwrap();
+    let (cp, _) = pair_by_pin(&r, &prod, "Productor").await.unwrap();
+    *r.ui.approve_with.lock().unwrap() = Some(Permission::ViewOnly);
+    let singer = Identity::generate().unwrap();
+    let (cs, _) = pair_by_pin(&r, &singer, "Cantante").await.unwrap();
+
+    // PDF falso de 100 KB (no múltiplo del tamaño de fragmento).
+    let doc: Vec<u8> = (0..100_003u32).map(|i| (i % 251) as u8).collect();
+    assert_eq!(r.host.send_document("Tema 1.pdf", DocKind::Pdf, &doc).unwrap(), 1, "sólo al dispositivo en solo lectura");
+    assert_eq!(r.host.prompter(PrompterAction::AutoScroll(4)), 1);
+
+    let mut got = vec![0u8; 0];
+    let mut prompter = None;
+    while prompter.is_none() {
+        match tokio::time::timeout(Duration::from_secs(5), cs.recv_control()).await.unwrap().unwrap() {
+            Message::DocChunk { name, kind, total, offset, data, .. } => {
+                assert_eq!((name.as_str(), kind), ("Tema 1.pdf", DocKind::Pdf));
+                if got.is_empty() {
+                    got = vec![0; total as usize];
+                }
+                got[offset as usize..offset as usize + data.len()].copy_from_slice(&data);
+            }
+            Message::Prompter { action } => prompter = Some(action),
+            _ => {}
+        }
+    }
+    assert_eq!(got, doc, "documento íntegro");
+    assert_eq!(prompter, Some(PrompterAction::AutoScroll(4)));
+    // El productor no recibe nada del modo cantante.
+    let other = tokio::time::timeout(Duration::from_millis(500), cp.recv_control()).await;
+    assert!(!matches!(other, Ok(Ok(Message::DocChunk { .. }))));
+    assert!(r.host.send_document("x", DocKind::Text, &[]).is_err());
+}

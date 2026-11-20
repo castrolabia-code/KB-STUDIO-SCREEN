@@ -75,6 +75,10 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
     private val monitors = mutableStateOf<List<Pair<String, String>>>(emptyList())
     private val currentMonitor = mutableStateOf("")
     private val profile = mutableStateOf("mixer")
+    // Modo cantante
+    private val lyrics = mutableStateOf<LyricsDoc?>(null)
+    private val prompter = PrompterState()
+    private val docFile by lazy { java.io.File(cacheDir, "kbss_letra.bin") }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,9 +98,17 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
         texture = TextureView(this).apply { surfaceTextureListener = this@ViewerActivity }
         texture.setOnTouchListener { _, ev -> onTouch(ev); true }
         val overlay = ComposeView(this).apply { setContent { MaterialTheme { Overlay() } } }
+        val lyricsLayer = ComposeView(this).apply {
+            setContent {
+                MaterialTheme {
+                    lyrics.value?.let { d -> LyricsScreen(d, prompter) { closeLyrics() } }
+                }
+            }
+        }
         setContentView(FrameLayout(this).apply {
             setBackgroundColor(android.graphics.Color.BLACK)
             addView(texture, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(lyricsLayer, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             addView(overlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
         })
         readStage()
@@ -159,6 +171,22 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
                         }
                         Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     }
+                    "doc_ready" -> NativeCore.takeDocument(h)?.let { bytes ->
+                        // Copia privada temporal; se borra al cerrar la letra o la app.
+                        docFile.writeBytes(bytes)
+                        val d = LyricsDoc(docFile, ev.optString("kind") == "pdf", ev.optString("name"))
+                        runOnUiThread { lyrics.value = null; lyrics.value = d }
+                    }
+                    "prompter" -> runOnUiThread {
+                        when (ev.optString("action")) {
+                            "next" -> prompter.pageCommands.tryEmit(1)
+                            "prev" -> prompter.pageCommands.tryEmit(-1)
+                            "goto" -> prompter.pageCommands.tryEmit(1000 + ev.optInt("page", 1))
+                            "auto" -> prompter.speed = ev.optInt("speed", 0)
+                            "lock" -> prompter.locked = ev.optBoolean("locked")
+                            "close" -> closeLyrics()
+                        }
+                    }
                     "closed" -> { if (alive) reconnect(); break }
                     "error" -> if (ev.optString("code") == "NotPaired") runOnUiThread {
                         Toast.makeText(this, R.string.err_not_paired, Toast.LENGTH_LONG).show(); finish()
@@ -210,8 +238,15 @@ class ViewerActivity : ComponentActivity(), TextureView.SurfaceTextureListener {
         }
     }
 
+    private fun closeLyrics() {
+        lyrics.value = null
+        prompter.speed = 0
+        docFile.delete()
+    }
+
     override fun onDestroy() {
         alive = false
+        docFile.delete()
         decoder?.release()
         if (handle != 0L) NativeCore.close(handle)
         SessionHolder.handle = 0
