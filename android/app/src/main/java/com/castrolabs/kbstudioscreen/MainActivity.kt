@@ -264,10 +264,13 @@ class MainActivity : ComponentActivity() {
                     LevelLogo(); Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         // Nombre: blanco, grueso y con sombreado profundo para máximo contraste.
-                        Text("KB STUDIO SCREEN", color = Color.White, fontFamily = Display, fontWeight = FontWeight.Bold,
-                            fontSize = if (narrow) 19.sp else 24.sp, letterSpacing = if (narrow) 1.sp else 2.sp, maxLines = 1, softWrap = false,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 5f), 10f)))
+                        // Se achica solo hasta entrar completo en una línea (pantallas angostas).
+                        androidx.compose.foundation.text.BasicText(
+                            "KB STUDIO SCREEN", maxLines = 1, softWrap = false,
+                            style = LocalTextStyle.current.copy(color = Color.White, fontFamily = Display, fontWeight = FontWeight.Bold,
+                                letterSpacing = if (narrow) 1.sp else 2.sp, shadow = Shadow(Color.Black, Offset(0f, 5f), 10f)),
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = if (narrow) 20.sp else 24.sp),
+                        )
                         Text(stringResource(R.string.brand).uppercase(), color = Amber, fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 11.sp,
                             letterSpacing = 3.sp, maxLines = 1, softWrap = false,
                             style = LocalTextStyle.current.copy(shadow = Shadow(Color.Black, Offset(0f, 3f), 6f)))
@@ -408,8 +411,9 @@ fun BigButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVect
         val fg = if (outlined) TextHi else Color.White
         val narrow = LocalConfiguration.current.screenWidthDp < 600
         Icon(icon, null, tint = fg, modifier = Modifier.size(if (narrow) 20.dp else 24.dp)); Spacer(Modifier.width(if (narrow) 8.dp else 10.dp))
-        Text(label, color = fg, fontFamily = Display, fontWeight = FontWeight.SemiBold, fontSize = if (narrow) 14.sp else 16.sp, maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        androidx.compose.foundation.text.BasicText(label, maxLines = 1, softWrap = false,
+            style = LocalTextStyle.current.copy(color = fg, fontFamily = Display, fontWeight = FontWeight.SemiBold),
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = if (narrow) 15.sp else 16.sp))
     }
 }
 
